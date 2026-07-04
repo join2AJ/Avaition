@@ -56,3 +56,15 @@ class RequirePermission:
                 detail=f"Role '{user.role.name}' lacks '{self.operation}' permission on '{self.vertical.value}'",
             )
         return user
+
+
+def assert_entity_scope(user: User, entity_id: int) -> None:
+    """Entity-role users may only act on their own entity; every other role
+    (Admin, BCAS, Pass Section, Others) is unrestricted here — narrower
+    per-vertical CRUD limits are enforced separately by RequirePermission.
+    """
+    if user.role.name == "entity" and user.entity_id != entity_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Entity-role users may only access their own entity's data",
+        )

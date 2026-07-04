@@ -1,0 +1,13 @@
+# Netlify config for the AEP Portal frontend.
+# The prototype is a single self-contained HTML file (React bundled inline),
+# so there is no build step — Netlify just serves frontend/index.html.
+[build]
+  publish = "frontend"
+  command = ""
+
+# SPA fallback: route every path back to index.html so client-side
+# navigation doesn't 404 on refresh.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

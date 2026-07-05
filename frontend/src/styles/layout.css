@@ -189,7 +189,26 @@
 .app-subline span { display: inline-flex; align-items: center; gap: 5px; }
 .detail-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
 .detail-side { display: flex; flex-direction: column; gap: 10px; }
+.detail-side-stack { display: flex; flex-direction: column; gap: 16px; }
 .ref-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+
+/* Lifecycle action panel — role-gated forward actions on an application. */
+.action-list { display: flex; flex-direction: column; gap: 8px; }
+.action-btn { justify-content: flex-start; gap: 8px; width: 100%; text-align: left; }
+.action-btn span:first-child { flex: 1; }
+.action-btn .action-clause { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; opacity: 0.72; }
+.action-btn svg:last-child { opacity: 0.7; }
+.action-confirm { display: flex; flex-direction: column; gap: 8px; }
+.field-label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; }
+.action-confirm .field { width: 100%; resize: vertical; }
+.action-confirm-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Timestamped step history. */
+.step-history { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.step-history li { display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 12.5px; }
+.step-history .sh-time { color: var(--text-muted); font-size: 11px; white-space: nowrap; padding-top: 1px; }
+.step-history .sh-body b { font-weight: 600; }
+.step-history .sh-note { margin-top: 3px; font-style: italic; color: var(--text-muted); line-height: 1.5; }
 .assumed-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber-700); background: var(--amber-100); padding: 1px 6px; border-radius: 5px; margin-left: 6px; }
 
 .stepper { list-style: none; margin: 6px 0 0; padding: 0; }

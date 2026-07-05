@@ -115,6 +115,8 @@ export interface StepLog {
   at: string;        // timestamp the step was completed / entered
   by?: string;
   slaNote?: string;  // mandatory justification recorded when the step's SLA was breached
+  note?: string;     // reason attached to a status transition (clarification / rejection / surrender)
+  action?: string;   // the transition label, e.g. "Forward to committee"
 }
 
 /** Polymorphic subject of an application — the shared Entity is always the sponsor. */

@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Building2, MapPin, Layers, Filter, X } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, Layers, Filter, X, ChevronRight } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useSettings, visiblePillars } from "@/app/settings";
 import { useData } from "@/app/data";
@@ -8,7 +8,8 @@ import { entityName } from "@/lib/api";
 import { STATUS_META, STATE_ORDER } from "@/domain/status";
 import { ZONES } from "@/domain/zones";
 import { applyFilter, type AppFilter } from "@/domain/filter";
-import type { Pillar } from "@/domain/types";
+import { transitionsFor, type Transition } from "@/domain/transitions";
+import type { Application, Pillar, Role } from "@/domain/types";
 import { Pill, PillarBadge, ZoneChips, ClauseBadge } from "@/components/ui";
 import ApplicationRegister from "@/components/ApplicationRegister";
 import SlaStepper from "@/components/SlaStepper";
@@ -64,14 +65,18 @@ export default function Applications() {
             </div>
             <div className="detail-grid">
               <SlaStepper app={current} />
-              <div className="card card-pad detail-side">
-                <span className="section-title">Governing references</span>
-                <div className="ref-row"><Layers size={14} /> Pillar {current.pillar} · {current.passType}</div>
-                <div className="ref-row"><ClauseBadge>AVSEC Order 02/2022 {current.clauseRef}</ClauseBadge></div>
-                <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, marginTop: 8 }}>
-                  Every step above is gated on its clause and SLA. A step cannot clear until its checklist is
-                  Uploaded + Verified, and any deficiency routes to the clarification queue before committee.
-                </p>
+              <div className="detail-side-stack">
+                <ApplicationActions app={current} role={session!.role} />
+                <div className="card card-pad detail-side">
+                  <span className="section-title">Governing references</span>
+                  <div className="ref-row"><Layers size={14} /> Pillar {current.pillar} · {current.passType}</div>
+                  <div className="ref-row"><ClauseBadge>AVSEC Order 02/2022 {current.clauseRef}</ClauseBadge></div>
+                  <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, marginTop: 8 }}>
+                    Every step above is gated on its clause and SLA. A step cannot clear until its checklist is
+                    Uploaded + Verified, and any deficiency routes to the clarification queue before committee.
+                  </p>
+                </div>
+                <StepHistory app={current} />
               </div>
             </div>
           </>
@@ -81,6 +86,93 @@ export default function Applications() {
   }
 
   return <ApplicationsList scoped={scoped} allowed={allowed} entities={entities} role={session!.role} />;
+}
+
+/** Role-gated lifecycle actions that drive a raised pass forward in-app. */
+function ApplicationActions({ app, role }: { app: Application; role: Role }) {
+  const { advanceApplication } = useData();
+  const actions = transitionsFor(app.status, role);
+  const [pending, setPending] = useState<Transition | null>(null);
+  const [note, setNote] = useState("");
+
+  const commit = (t: Transition) => {
+    advanceApplication(app.id, t.to, { note: note.trim() || undefined, action: t.label });
+    setPending(null); setNote("");
+  };
+
+  if (STATUS_META[app.status] && actions.length === 0) {
+    const terminal = ["issued", "surrendered", "rejected"].includes(app.status);
+    return (
+      <div className="card card-pad detail-side">
+        <span className="section-title">Actions</span>
+        <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, marginTop: 6 }}>
+          {terminal
+            ? `This pass is ${STATUS_META[app.status].label.toLowerCase()} — no further action from your role.`
+            : "No action available to your role at this stage. It sits with the responsible desk."}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card card-pad detail-side">
+      <span className="section-title">Actions</span>
+      <p className="muted" style={{ fontSize: 12, margin: "2px 0 10px" }}>
+        Drive this pass through its lifecycle. Every action is logged with your name &amp; time.
+      </p>
+      {pending ? (
+        <div className="action-confirm">
+          <label className="field-label">
+            {pending.needsNote ? "Reason (mandatory)" : "Note (optional)"}
+            {pending.clause && <span className="badge-clause" style={{ marginLeft: 6 }}>{pending.clause}</span>}
+          </label>
+          <textarea className="field" rows={2} placeholder={pending.needsNote ? "State the reason…" : "Add a note…"} value={note} onChange={(e) => setNote(e.target.value)} />
+          <div className="action-confirm-row">
+            <button className={`btn ${pending.tone === "red" ? "btn-bad" : pending.tone === "ghost" ? "btn-ghost" : "btn-brand"}`}
+              disabled={pending.needsNote && !note.trim()} onClick={() => commit(pending)}>
+              Confirm · {pending.label}
+            </button>
+            <button className="btn btn-ghost" onClick={() => { setPending(null); setNote(""); }}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className="action-list">
+          {actions.map((t) => (
+            <button key={t.to + t.label}
+              className={`btn action-btn ${t.tone === "brand" ? "btn-brand" : t.tone === "green" ? "btn-brand" : t.tone === "red" ? "btn-bad" : "btn-ghost"}`}
+              onClick={() => (t.needsNote ? (setPending(t), setNote("")) : commit(t))}>
+              <span>{t.label}</span>
+              {t.clause && <span className="action-clause">{t.clause}</span>}
+              <ChevronRight size={15} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Timestamped trail of every step taken on this application. */
+function StepHistory({ app }: { app: Application }) {
+  const steps = app.stepLog ?? [];
+  if (steps.length === 0) return null;
+  return (
+    <div className="card card-pad detail-side">
+      <span className="section-title">Step history</span>
+      <ol className="step-history">
+        {steps.map((s, i) => (
+          <li key={i}>
+            <span className="sh-time mono">{s.at}</span>
+            <span className="sh-body">
+              <b>{s.action ?? s.stage}</b>
+              {s.by && <span className="muted"> · {s.by}</span>}
+              {(s.note || s.slaNote) && <div className="sh-note">“{s.note ?? s.slaNote}”</div>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }
 
 function ApplicationsList({ scoped, allowed, entities, role }: {

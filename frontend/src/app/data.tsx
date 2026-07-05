@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Application, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage } from "@/domain/types";
+import type { Application, ApplicationStatus, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage } from "@/domain/types";
 import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, type AuditEntry, type StopListEntry } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
@@ -52,6 +52,7 @@ interface DataCtx {
   createEntity: (e: NewEntity) => Entity;
   createIndividual: (i: NewIndividual) => Individual;
   createApplication: (a: NewApplication) => Application;
+  advanceApplication: (appId: string, to: ApplicationStatus, opts?: { note?: string; action?: string }) => void;
   createContract: (c: NewContract) => Contract;
   terminateContract: (contractId: string) => void;
   advanceApproval: (entityId: string) => void;
@@ -269,10 +270,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return app;
   };
 
+  // Drive a raised pass through its lifecycle: checklist → committee → approve
+  // → issue → surrender (with clarification / reject branches). Each transition
+  // appends a timestamped step, writes the login-wise audit, and intimates the
+  // entity / BCAS on the key state changes (§8.3.2 · §8.3.3 · §15 · §10.7).
+  const advanceApplication: DataCtx["advanceApplication"] = (appId, to, opts) => {
+    const app = applications.find((a) => a.id === appId);
+    if (!app) return;
+    const stageMap: Record<ApplicationStatus, string> = {
+      draft: "intake", checklist_pending: "checklist", clarification: "checklist",
+      committee_scheduled: "committee", approved: "issue", issued: "handover",
+      rejected: "committee", surrendered: "closed",
+    };
+    const ts = now();
+    setApplications((x) => x.map((a) => (a.id === appId
+      ? { ...a, status: to, stepLog: [...(a.stepLog ?? []), { stage: stageMap[to] ?? to, at: ts, by: session?.name, note: opts?.note, action: opts?.action }] }
+      : a)));
+    const tone: AuditEntry["tone"] = to === "rejected" ? "bad" : to === "clarification" || to === "surrendered" ? "warn" : "ok";
+    log("advance_application", appId, `${app.subject}: ${app.status} → ${to}${opts?.note ? ` · ${opts.note}` : ""}`, tone);
+    if (to === "issued") notify("entity", "pass_issued", `${app.subject}: ${app.passType} pass approved & issued — ready for print / handover (${appId}).`, "ok");
+    else if (to === "rejected") notify("entity", "pass_rejected", `${app.subject}: application ${appId} rejected${opts?.note ? ` — ${opts.note}` : ""}.`, "bad");
+    else if (to === "clarification") notify("entity", "clarification", `${app.subject}: clarification required on ${appId}${opts?.note ? ` — ${opts.note}` : ""}.`, "warn");
+    else if (to === "surrendered") notify("bcas", "pass_surrendered", `${app.subject}: pass ${appId} surrendered${opts?.note ? ` — ${opts.note}` : ""} (§10.7).`, "warn");
+    else if (to === "approved") notify("operator", "pass_approved", `${app.subject}: ${appId} approved at committee — proceed to issue (§15).`, "ok");
+  };
+
   return (
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, roleZones, roles,
-      createEntity, createIndividual, createApplication, createContract, terminateContract,
+      createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract,
       advanceApproval, markNotificationsRead,
       stopList, isStopListed, addStopList, removeStopList, taepDaysUsed, screenStopList,
       setEntityZones, setRoleZones, createRole, setPermission, recordSlaJustification, log,

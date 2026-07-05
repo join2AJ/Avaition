@@ -41,8 +41,12 @@ Status: ☐ open · ☑ fixed.
 
 ## D. Functional flows
 
-- ☐ **D1 · S2 — Pass lifecycle not fully drivable in-app.** A created pass can't be advanced through
-  BGC → committee → issue → print → distribute from the UI. *(queued)*
+- ☑ **D1 · S2 — Pass lifecycle now drivable in-app.** Added a role-gated status machine
+  (`domain/transitions.ts`) + `advanceApplication` engine. From an application's detail view the right
+  desk drives it forward: Operator works the checklist (forward to committee / send for clarification /
+  reject), BCAS decides at committee (approve / reject), Operator issues & prints, Entity resubmits or
+  surrenders. Reason is mandatory on clarification/reject/surrender; every transition is timestamped in a
+  Step-history panel, written to the login-wise audit, and intimates the entity/BCAS on key changes.
 - ☐ **D2 · S2 — Expiry-driven notifications missing.** Notifications are termination-driven only; add
   the scheduled 30/14/3-day expiry intimations. *(queued)*
 - ☐ **D3 · S2 — Contract renewal flow.** Re-confirm zones at renewal. *(queued)*

@@ -60,6 +60,11 @@ Status: ☐ open · ☑ fixed.
   from the static demo `api`, so a pass forwarded to committee (D1) never appeared in the committee-ready
   pool and the count was stale. Fix: the page now reads the live `useData()` store — forwarding a pass
   immediately reflects on the agenda. Verified end-to-end.
+- ☑ **E4 · S2 — Surrenders/terminations didn't reach the penalty tracker.** The Surrenders & penalties
+  view read a static list, so an in-app surrender, withdrawal or contract termination never produced a
+  §10.7 record. Fix: surrenders are now in the live store; surrendering/withdrawing a pass and
+  terminating a contract each append a dated record (exit today, due +7 days) that the tracker shows
+  immediately. Verified end-to-end.
 
 ## C. Application security
 

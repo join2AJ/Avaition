@@ -1,19 +1,16 @@
-import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import type { Entity } from "@/domain/types";
-import type { Surrender } from "@/lib/demoData";
-import { api, entityName } from "@/lib/api";
+import { entityName } from "@/lib/api";
+import { useData } from "@/app/data";
 import { Pill } from "@/components/ui";
 
-const REASON_TONE: Record<string, string> = { terminated: "red", expired: "amber", deceased: "slate" };
+const REASON_TONE: Record<string, string> = { terminated: "red", expired: "amber", deceased: "slate", surrendered: "green", withdrawn: "red" };
 
 // Surrenders & penalties — table based. Late surrender (>1 week of exit,
 // §10.7) auto-notifies BCAS + entity; BCAS may raise a penalty with written
-// justification (§10.8).
+// justification (§10.8). Reads the live store so in-app surrenders,
+// withdrawals and contract terminations appear here immediately.
 export default function Penalties() {
-  const [surrenders, setSurrenders] = useState<Surrender[]>([]);
-  const [entities, setEntities] = useState<Entity[]>([]);
-  useEffect(() => { api.listSurrenders().then(setSurrenders); api.listEntities().then(setEntities); }, []);
+  const { surrenders, entities } = useData();
 
   return (
     <div className="page">

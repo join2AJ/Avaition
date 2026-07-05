@@ -81,7 +81,8 @@ export const COMMITTEES: Committee[] = [
 ];
 
 export interface Surrender {
-  id: string; applicationId: string; holder: string; entityId: string; reason: "terminated" | "expired" | "deceased";
+  id: string; applicationId: string; holder: string; entityId: string;
+  reason: "terminated" | "expired" | "deceased" | "surrendered" | "withdrawn";
   exitDate: string; dueDate: string; daysLate: number; entityJustification?: string; penalty?: string; penaltyStatus?: "open" | "resolved";
 }
 export const SURRENDERS: Surrender[] = [

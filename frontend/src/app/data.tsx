@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Application, ApplicationStatus, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage } from "@/domain/types";
-import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, type AuditEntry, type StopListEntry } from "@/lib/demoData";
+import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, SURRENDERS, type AuditEntry, type StopListEntry, type Surrender } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
@@ -47,7 +47,7 @@ export type RoleZoneMatrix = Record<string, string[]>;
 
 interface DataCtx {
   entities: Entity[]; individuals: Individual[]; applications: Application[]; audit: AuditEntry[];
-  contracts: Contract[]; notifications: Notification[];
+  contracts: Contract[]; notifications: Notification[]; surrenders: Surrender[];
   roleZones: RoleZoneMatrix;
   roles: RoleDef[];
   createEntity: (e: NewEntity) => Entity;
@@ -88,7 +88,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [contracts, setContracts] = useState<Contract[]>(() => load("aep-contracts", CONTRACTS));
   const [notifications, setNotifications] = useState<Notification[]>(() => load("aep-notifs", []));
   const [stopList, setStopList] = useState<StopListEntry[]>(() => load("aep-stoplist", STOP_LIST));
+  const [surrenders, setSurrenders] = useState<Surrender[]>(() => load("aep-surrenders", SURRENDERS));
   useEffect(() => { sessionStorage.setItem("aep-stoplist", JSON.stringify(stopList)); }, [stopList]);
+  useEffect(() => { sessionStorage.setItem("aep-surrenders", JSON.stringify(surrenders)); }, [surrenders]);
+
+  // Append surrender/penalty-tracker records with sequential SUR- ids (§10.7).
+  const appendSurrenders = (recs: Omit<Surrender, "id">[]) => {
+    if (!recs.length) return;
+    setSurrenders((prev) => {
+      let max = prev.reduce((m, s) => { const n = parseInt(s.id.replace(/\D/g, ""), 10); return Number.isFinite(n) && n > m ? n : m; }, 0);
+      const withIds = recs.map((r) => ({ id: `SUR-${String(++max).padStart(2, "0")}`, ...r }));
+      return [...withIds, ...prev];
+    });
+  };
+  const surrenderRecord = (applicationId: string, holder: string, entityId: string, reason: Surrender["reason"]): Omit<Surrender, "id"> => {
+    const exitDate = today();
+    const dueDate = new Date(+new Date(exitDate) + 7 * 86400000).toISOString().slice(0, 10);
+    return { applicationId, holder, entityId, reason, exitDate, dueDate, daysLate: 0 };
+  };
 
   useEffect(() => { sessionStorage.setItem("aep-contracts", JSON.stringify(contracts)); }, [contracts]);
   useEffect(() => { sessionStorage.setItem("aep-notifs", JSON.stringify(notifications)); }, [notifications]);
@@ -195,6 +212,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
 
     const ent = entities.find((e) => e.id === con.entityId);
+    appendSurrenders(affected.map((a) => surrenderRecord(a.id, a.subject, con.entityId, "terminated")));
     log("terminate_contract", contractId, `${con.counterparty} · ${affected.length} passes terminated`, "bad");
     notify("entity", "contract_terminated", `Contract ${contractId} (${con.counterparty}) terminated — ${affected.length} passes surrendered. Complete closing formalities within 7 days (§10.7).`, "bad");
     notify("bcas", "contract_terminated", `${ent?.name ?? con.entityId}: contract ${contractId} terminated — ${affected.length} passes moved to surrender.`, "bad");
@@ -357,11 +375,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (to === "issued") notify("entity", "pass_issued", `${app.subject}: ${app.passType} pass ${app.status === "checklist_pending" || app.status === "approved" ? "approved & issued — ready for print / handover" : "reinstated"} (${appId}).`, "ok");
     else if (to === "rejected") notify("entity", "pass_rejected", `${app.subject}: application ${appId} rejected${opts?.note ? ` — ${opts.note}` : ""}.`, "bad");
     else if (to === "clarification") notify("entity", "clarification", `${app.subject}: clarification required on ${appId}${opts?.note ? ` — ${opts.note}` : ""}.`, "warn");
-    else if (to === "surrendered") notify("bcas", "pass_surrendered", `${app.subject}: pass ${appId} surrendered${opts?.note ? ` — ${opts.note}` : ""} (§10.7).`, "warn");
+    else if (to === "surrendered") { notify("bcas", "pass_surrendered", `${app.subject}: pass ${appId} surrendered${opts?.note ? ` — ${opts.note}` : ""} (§10.7).`, "warn"); appendSurrenders([surrenderRecord(appId, app.subject, app.entityId, "surrendered")]); }
     else if (to === "approved") notify("operator", "pass_approved", `${app.subject}: ${appId} approved at committee — proceed to issue (§15).`, "ok");
     else if (to === "parked") notify("entity", "pass_parked", `${app.subject}: pass ${appId} parked for non-use${opts?.note ? ` — ${opts.note}` : ""}. Un-park within norms or it lapses (§10.6).`, "warn");
     else if (to === "deactivated") notify("entity", "pass_deactivated", `${app.subject}: pass ${appId} deactivated (compliance hold)${opts?.note ? ` — ${opts.note}` : ""}. Clear the deficiency to reactivate (§10 · §13).`, "warn");
-    else if (to === "withdrawn") { notify("entity", "pass_withdrawn", `${app.subject}: pass ${appId} WITHDRAWN${opts?.note ? ` — ${opts.note}` : ""}. Surrender the card immediately (§11).`, "bad"); notify("bcas", "pass_withdrawn", `${app.subject}: ${appId} withdrawn (§11)${opts?.note ? ` — ${opts.note}` : ""}.`, "bad"); }
+    else if (to === "withdrawn") { notify("entity", "pass_withdrawn", `${app.subject}: pass ${appId} WITHDRAWN${opts?.note ? ` — ${opts.note}` : ""}. Surrender the card immediately (§11).`, "bad"); notify("bcas", "pass_withdrawn", `${app.subject}: ${appId} withdrawn (§11)${opts?.note ? ` — ${opts.note}` : ""}.`, "bad"); appendSurrenders([surrenderRecord(appId, app.subject, app.entityId, "withdrawn")]); }
   };
 
   // §13 — AVSEC training lapse suspends access. Any currently-issued MAN pass
@@ -398,7 +416,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      entities, individuals, applications, audit, contracts, notifications, roleZones, roles,
+      entities, individuals, applications, audit, contracts, notifications, surrenders, roleZones, roles,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,
       stopList, isStopListed, addStopList, removeStopList, taepDaysUsed, screenStopList,

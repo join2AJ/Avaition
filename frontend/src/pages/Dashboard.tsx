@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileStack, Clock3, MessageSquareWarning, CalendarClock, TimerReset, Ban, AlertTriangle } from "lucide-react";
+import { FileStack, Clock3, MessageSquareWarning, CalendarClock, TimerReset, Ban, AlertTriangle, Radio } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import type { Application, Entity } from "@/domain/types";
@@ -55,7 +55,7 @@ export default function Dashboard() {
         <span className="pill tone-green pill-dot">Audit trail on</span>
       </div>
 
-      <div className="kpi-grid">
+      <div className="kpi-grid stagger">
         {tiles.map((t) => <KpiTile key={t.label} {...t} />)}
       </div>
 
@@ -75,6 +75,51 @@ export default function Dashboard() {
           </div>
           <PillarMixBars data={mix} />
           <p className="muted pmix-note">One entity registration feeds all three pillars — Man&nbsp;[§5·§10·§11] · Material&nbsp;[§12B] · Vehicle&nbsp;[§12A].</p>
+        </section>
+      </div>
+
+      <div className="dash-grid">
+        <section className="card card-pad">
+          <div className="card-head">
+            <span className="section-title">Airport readiness</span>
+            <span className="pill tone-green pill-dot">On track</span>
+          </div>
+          <div className="readiness-head">
+            <span className="serif readiness-score">87<small>%</small></span>
+            <span className="muted" style={{ fontSize: 12 }}>SLA-weighted posture across all pillars</span>
+          </div>
+          <div className="readiness-bars">
+            {[
+              { label: "MAN · AEP turnaround", pct: 88, tone: "var(--green-700)" },
+              { label: "MATERIAL · ToT", pct: 74, tone: "var(--amber-500)" },
+              { label: "VEHICLE · VEP", pct: 95, tone: "var(--green-700)" },
+            ].map((r) => (
+              <div className="rd-row" key={r.label}>
+                <span className="rd-label">{r.label}</span>
+                <span className="rd-track"><span className="rd-fill" style={{ width: `${r.pct}%`, background: r.tone }} /></span>
+                <span className="rd-pct">{r.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="card audit-card">
+          <div className="audit-head"><Radio size={13} /> AUDIT · TRAIL</div>
+          <div className="audit-log mono">
+            {[
+              ["09:41Z", "AEP register synced — 2,140 holders", "ok"],
+              ["10:14Z", "ToT card TOT-0912 issued · zone P", "ok"],
+              ["11:02Z", "APP-2240 sent to clarification · SLA 2 WD", "warn"],
+              ["11:30Z", "Committee scheduled · fortnightly cadence", "ok"],
+              ["11:47Z", "APP-2244 late-surrender flag raised", "bad"],
+              ["12:03Z", "Auto-scan complete · 11 applications", "ok"],
+            ].map(([t, msg, tone]) => (
+              <div className="audit-line" key={t as string}>
+                <span className="audit-t">{t}</span>
+                <span className={`audit-msg ${tone}`}>{msg}</span>
+              </div>
+            ))}
+          </div>
         </section>
       </div>
 

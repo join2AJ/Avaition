@@ -22,7 +22,7 @@ export function KpiTile({
   delta?: { dir: "up" | "down"; text: string }; hint?: string;
 }) {
   return (
-    <div className="card kpi">
+    <div className="card kpi" style={{ ["--kpi-accent" as string]: accent }}>
       <div className="kpi-head">
         <span className="kpi-icon" style={{ background: accent }}>{icon}</span>
         {delta && (

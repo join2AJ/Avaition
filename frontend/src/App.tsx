@@ -6,6 +6,12 @@ import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import Verify from "./pages/Verify";
 import AccessControl from "./pages/AccessControl";
+import Committees from "./pages/Committees";
+import Zones from "./pages/Zones";
+import EntityOnboarding from "./pages/EntityOnboarding";
+import Penalties from "./pages/Penalties";
+import Users from "./pages/Users";
+import Audit from "./pages/Audit";
 import Placeholder from "./pages/Placeholder";
 import "./styles/layout.css";
 
@@ -30,13 +36,13 @@ export default function App() {
                 <Route path="applications/:id" element={<Applications />} />
                 <Route path="verify" element={<Verify />} />
                 <Route path="access" element={<AccessControl />} />
-                <Route path="committees" element={<Placeholder title="Committee agenda" note="Committee-ready pool, today-or-forward date scheduling (back-dating blocked), decisions with mandatory reasons." />} />
-                <Route path="entities" element={<Placeholder title="Entity onboarding" note="4-step wizard: identity → compliance docs → signatories → job-role → zone-need matrix. One registration serves all pillars." />} />
-                <Route path="zones" element={<Placeholder title="Zones & escalation" note="Auto-validation against contract scope + job-role need; hard-block with letterhead escalation to BCAS." />} />
-                <Route path="penalties" element={<Placeholder title="Surrenders · penalties" note="Late-surrender auto-detection, entity justification, BCAS penalty with mandatory written justification." />} />
+                <Route path="committees" element={<Committees />} />
+                <Route path="entities" element={<EntityOnboarding />} />
+                <Route path="zones" element={<Zones />} />
+                <Route path="penalties" element={<Penalties />} />
                 <Route path="profile" element={<Placeholder title="Entity profile" note="Live compliance status: Security Programme, Clearance, contract validity, NCASP, AOP linkage, dynamic category docs." />} />
-                <Route path="users" element={<Placeholder title="Users & roles" note="Admin role builder — per-vertical C/R/U/D grid; every grant stores a governing policy reference." />} />
-                <Route path="audit" element={<Placeholder title="Audit log" note="Append-only trail: actor, action, object, before/after, timestamp. Visible to Admin and BCAS." />} />
+                <Route path="users" element={<Users />} />
+                <Route path="audit" element={<Audit />} />
                 <Route path="*" element={<Navigate to="/app" replace />} />
               </Routes>
             </Shell>

@@ -23,8 +23,9 @@ export function KpiTile({
 }) {
   return (
     <div className="card kpi" style={{ ["--kpi-accent" as string]: accent }}>
-      <div className="kpi-head">
+      <div className="kpi-row">
         <span className="kpi-icon" style={{ background: accent }}>{icon}</span>
+        <span className="kpi-value">{value}</span>
         {delta && (
           <span className={`kpi-delta ${delta.dir === "up" ? "up" : "down"}`}>
             {delta.dir === "up" ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
@@ -32,7 +33,6 @@ export function KpiTile({
           </span>
         )}
       </div>
-      <div className="kpi-value">{value}</div>
       <div className="kpi-label">{label}</div>
       {hint && <div className="kpi-hint">{hint}</div>}
     </div>

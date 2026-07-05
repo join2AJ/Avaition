@@ -1,6 +1,6 @@
 import type { Application, Entity, Pillar } from "@/domain/types";
 import { STATE_ORDER } from "@/domain/status";
-import { APPLICATIONS, ENTITIES, INDIVIDUALS } from "./demoData";
+import { APPLICATIONS, ENTITIES, INDIVIDUALS, COMMITTEES, SURRENDERS, AUDIT } from "./demoData";
 
 // ---------------------------------------------------------------------------
 // Data access facade. Today it resolves against the in-memory demo dataset so
@@ -15,6 +15,9 @@ export const api = {
   getEntity: (id: string) => delay(ENTITIES.find((e) => e.id === id) ?? null),
   listIndividuals: () => delay(INDIVIDUALS),
   listApplications: () => delay(APPLICATIONS),
+  listCommittees: () => delay(COMMITTEES),
+  listSurrenders: () => delay(SURRENDERS),
+  listAudit: () => delay(AUDIT),
 };
 
 // --- Derived dashboard selectors (pure, so they are trivially testable) -----

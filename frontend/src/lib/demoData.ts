@@ -43,6 +43,32 @@ export const INDIVIDUALS: Individual[] = [
   { id: "IND-04", entityId: "ENT-04", name: "D. Rao", jobRole: "Fuel Technician", hasLogin: false },
 ];
 
+export interface Committee { id: string; date: string; chair: string; members: string; applicationIds: string[]; }
+export const COMMITTEES: Committee[] = [
+  { id: "CMTE-07", date: "2026-07-09", chair: "RD BCAS (Asst. Director)", members: "CASO/ASG · Airport Director", applicationIds: ["APP-2256"] },
+  { id: "CMTE-08", date: "2026-07-23", chair: "RD BCAS (Asst. Director)", members: "CASO/ASG · Airport Director", applicationIds: [] },
+];
+
+export interface Surrender {
+  id: string; applicationId: string; holder: string; entityId: string; reason: "terminated" | "expired" | "deceased";
+  exitDate: string; dueDate: string; daysLate: number; entityJustification?: string; penalty?: string; penaltyStatus?: "open" | "resolved";
+}
+export const SURRENDERS: Surrender[] = [
+  { id: "SUR-11", applicationId: "APP-2244", holder: "D. Rao", entityId: "ENT-04", reason: "terminated", exitDate: "2026-06-20", dueDate: "2026-06-27", daysLate: 9,
+    entityJustification: "Holder absconded; FIR lodged at airport PS on 30-06.", penalty: "Written warning + re-issue fee", penaltyStatus: "open" },
+  { id: "SUR-12", applicationId: "APP-2259", holder: "A. Reddy", entityId: "ENT-05", reason: "expired", exitDate: "2026-07-01", dueDate: "2026-07-08", daysLate: 3, penaltyStatus: undefined },
+];
+
+export interface AuditEntry { ts: string; actor: string; action: string; object: string; detail: string; tone: "ok" | "warn" | "bad"; }
+export const AUDIT: AuditEntry[] = [
+  { ts: "2026-07-05 09:41", actor: "system", action: "sync", object: "AEP register", detail: "2,140 holders reconciled", tone: "ok" },
+  { ts: "2026-07-05 10:14", actor: "Pass Section", action: "issue", object: "TOT-0912", detail: "ToT card issued · zone P", tone: "ok" },
+  { ts: "2026-07-05 11:02", actor: "Pass Section", action: "send_to_clarification", object: "APP-2240", detail: "BGC older than 3 months · SLA 2 WD", tone: "warn" },
+  { ts: "2026-07-05 11:30", actor: "Pass Section", action: "schedule_committee", object: "APP-2256", detail: "CMTE-07 · 2026-07-09", tone: "ok" },
+  { ts: "2026-07-05 11:47", actor: "BCAS", action: "late_surrender_flag", object: "APP-2244", detail: "9 days late · entity notified", tone: "bad" },
+  { ts: "2026-07-05 12:03", actor: "Admin", action: "access_policy", object: "BCAS pillars", detail: "MATERIAL kept hidden", tone: "ok" },
+];
+
 export const APPLICATIONS: Application[] = [
   { id: "APP-2216", pillar: "MAN", entityId: "ENT-01", subject: "R. Sharma", passType: "BAEP", zones: ["A", "D", "T"], status: "checklist_pending", createdBy: "Pass Section", createdAt: "2026-07-05", clauseRef: "§5" },
   { id: "APP-2231", pillar: "MAN", entityId: "ENT-01", subject: "M. Iyer", passType: "BAEP", zones: ["A", "D", "T", "P", "Sd"], status: "checklist_pending", createdBy: "Entity", createdAt: "2026-07-05", clauseRef: "§5" },

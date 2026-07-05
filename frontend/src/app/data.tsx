@@ -223,7 +223,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const createApplication: DataCtx["createApplication"] = (a) => {
     const from = a.validFrom || today();
-    const { to, norm } = computeValidTo(a.passType, from);
+    const contractEnd = contracts.find((c) => c.id === a.contractId)?.end;
+    const { to, norm } = computeValidTo(a.passType, from, contractEnd);
     const ts = now();
     const app: Application = {
       id: nextId(applications, "APP-", 4), pillar: a.pillar, entityId: a.entityId, subject: a.subject,

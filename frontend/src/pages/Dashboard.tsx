@@ -22,8 +22,11 @@ export default function Dashboard() {
     if (!session) return [];
     const allowed = visiblePillars(session.role, policy);
     let list = apps.filter((a) => allowed.includes(a.pillar));
-    if (session.role === "entity" || session.role === "individual" || session.role === "others") {
+    if (session.role === "entity" || session.role === "others") {
       list = list.filter((a) => a.entityId === session.entityId);
+    } else if (session.role === "individual") {
+      // Individuals see ONLY their own records, not the whole entity's.
+      list = list.filter((a) => a.subject === session.name);
     }
     return list;
   }, [apps, session, policy]);

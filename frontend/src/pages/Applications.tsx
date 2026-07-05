@@ -25,8 +25,10 @@ export default function Applications() {
   const allowed = visiblePillars(session!.role, policy);
   const scoped = useMemo(() => {
     let list = apps.filter((a) => allowed.includes(a.pillar));
-    if (["entity", "individual", "others"].includes(session!.role)) {
+    if (session!.role === "entity" || session!.role === "others") {
       list = list.filter((a) => a.entityId === session!.entityId);
+    } else if (session!.role === "individual") {
+      list = list.filter((a) => a.subject === session!.name);
     }
     return list;
   }, [apps, session, allowed]);
@@ -34,7 +36,10 @@ export default function Applications() {
   const current = id ? apps.find((a) => a.id === id) : null;
 
   if (current) {
-    const blocked = !allowed.includes(current.pillar);
+    const outOfScope =
+      (session!.role === "individual" && current.subject !== session!.name) ||
+      ((session!.role === "entity" || session!.role === "others") && current.entityId !== session!.entityId);
+    const blocked = !allowed.includes(current.pillar) || outOfScope;
     const st = STATUS_META[current.status];
     return (
       <div className="page">

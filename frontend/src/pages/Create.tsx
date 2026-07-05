@@ -66,7 +66,8 @@ export default function Create() {
   const onRole = (r: string) => { setJobRole(r); autofillZones(entityId, r, pillar); };
   const onPillar = (p: Pillar) => { setPillar(p); setPassType(PASS_TYPES[p][0]); setSubject(""); autofillZones(entityId, jobRole, p); };
 
-  const validTo = computeValidTo(passType, validFrom);
+  const contractEnd = entityContracts.find((c) => c.id === contractId)?.end;
+  const validTo = computeValidTo(passType, validFrom, contractEnd);
 
   // entity form
   const [eName, setEName] = useState("");
@@ -167,7 +168,7 @@ export default function Create() {
               <span className="fld-hint">{isAdmin ? "Admin may back-date." : "Back-dating blocked — today or forward only."}</span></label>
             <div className="fld"><span className="fld-l">Valid to <ClauseBadge>auto per norms</ClauseBadge></span>
               <div className="valid-to"><CalendarClock size={15} /> <b className="mono">{validTo.to}</b></div>
-              <span className="fld-hint">{validTo.norm}</span></div>
+              <span className="fld-hint">{validTo.cappedByContract ? <b style={{ color: "var(--amber-700)" }}>Capped to contract end (co-terminus · §7A)</b> : validTo.norm}</span></div>
           </div>
 
           <label className="fld"><span className="fld-l req">

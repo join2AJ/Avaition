@@ -303,6 +303,7 @@
 .appr-step { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface-sunken); color: var(--text-muted); }
 .appr-step.done { background: var(--green-100); color: var(--green-700); }
 .appr-step.current { background: var(--navy-500); color: #fff; }
+.nc-row { grid-template-columns: 1.6fr 1fr auto auto auto !important; }
 @media (max-width: 900px) { .appr-row { grid-template-columns: 1fr; } }
 
 /* ===== Zones ============================================================= */

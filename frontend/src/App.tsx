@@ -1,8 +1,10 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "./app/auth";
+import { canAccess, homeFor } from "./app/nav";
 import Shell from "./components/Shell";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Compliance from "./pages/Compliance";
 import Applications from "./pages/Applications";
 import Create from "./pages/Create";
 import Checklist from "./pages/Checklist";
@@ -26,6 +28,16 @@ function Protected({ children }: { children: JSX.Element }) {
   return session ? children : <Navigate to="/" replace />;
 }
 
+/** Per-role route authorization — blocks URL access to pages outside a role's scope. */
+function RouteGuard({ children }: { children: JSX.Element }) {
+  const { session } = useAuth();
+  const { pathname } = useLocation();
+  if (session && !canAccess(session.role, pathname)) {
+    return <Navigate to={homeFor(session.role)} replace />;
+  }
+  return children;
+}
+
 export default function App() {
   const { session } = useAuth();
   return (
@@ -36,8 +48,10 @@ export default function App() {
         element={
           <Protected>
             <Shell>
+              <RouteGuard>
               <Routes>
                 <Route index element={session?.role === "cisf" ? <Navigate to="/app/verify" replace /> : <Dashboard />} />
+                <Route path="compliance" element={<Compliance />} />
                 <Route path="create" element={<Create />} />
                 <Route path="checklist" element={<Checklist />} />
                 <Route path="applications" element={<Applications />} />
@@ -57,6 +71,7 @@ export default function App() {
                 <Route path="audit" element={<Audit />} />
                 <Route path="*" element={<Navigate to="/app" replace />} />
               </Routes>
+              </RouteGuard>
             </Shell>
           </Protected>
         }

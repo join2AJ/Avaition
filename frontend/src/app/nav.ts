@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FileStack, CalendarClock, Building2, ShieldAlert,
-  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, ListChecks, Timer, ClipboardCheck, FileSignature, type LucideIcon,
+  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, ListChecks, Timer, ClipboardCheck, FileSignature, Gauge, type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/domain/types";
 
@@ -15,6 +15,7 @@ export interface NavItem {
 // depth that role reaches them (per the wireframe sitemap, §1).
 const ALL: Record<string, NavItem> = {
   dashboard: { to: "/app", label: "Dashboard", icon: LayoutDashboard },
+  compliance: { to: "/app/compliance", label: "Compliance & insights", icon: Gauge },
   create: { to: "/app/create", label: "Create", icon: PlusCircle },
   applications: { to: "/app/applications", label: "Applications", icon: FileStack },
   checklist: { to: "/app/checklist", label: "Checklists", icon: ListChecks },
@@ -33,10 +34,22 @@ const ALL: Record<string, NavItem> = {
   verify: { to: "/app/verify", label: "Verify pass", icon: ScanSearch },
 };
 
+/** Home path for a role (first nav item). */
+export function homeFor(role: Role): string {
+  return NAV_BY_ROLE[role]?.[0]?.to ?? "/app";
+}
+
+/** Route authorization: a role may only reach the pages in its nav (matched by
+ *  prefix so detail routes like /app/applications/:id are covered). */
+export function canAccess(role: Role, path: string): boolean {
+  const allowed = NAV_BY_ROLE[role]?.map((i) => i.to) ?? [];
+  return allowed.some((base) => (base === "/app" ? path === "/app" : path === base || path.startsWith(base + "/")));
+}
+
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.access, ALL.audit],
-  bcas: [ALL.dashboard, ALL.applications, ALL.checklist, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.audit],
-  operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.users, ALL.penalties],
+  admin: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.access, ALL.audit],
+  bcas: [ALL.dashboard, ALL.compliance, ALL.applications, ALL.checklist, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.audit],
+  operator: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.users, ALL.penalties],
   cisf: [ALL.verify],
   entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.entities, ALL.contracts, ALL.zones, ALL.profile],
   others: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.contracts, ALL.profile],

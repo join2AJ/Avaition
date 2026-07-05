@@ -118,6 +118,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     prev.current = key;
   }, [session]);
 
+  // D2 — scheduled expiry intimations (§7A · §10.7 · §13). On mount, scan every
+  // live pass, active contract and AVSEC-training date; anything crossing the
+  // 30 / 14 / 3-day (or already-expired) threshold raises an intimation. Each
+  // carries a deterministic id (bucket-scoped) so reloads never duplicate it.
+  const expiryScanned = useRef(false);
+  useEffect(() => {
+    if (expiryScanned.current) return;
+    expiryScanned.current = true;
+    const t0 = +new Date(today());
+    const bucketOf = (days: number): number | null =>
+      days < 0 ? -1 : days <= 3 ? 3 : days <= 14 ? 14 : days <= 30 ? 30 : null;
+    const events: { id: string; to: string; message: string; tone: Notification["tone"] }[] = [];
+    const push = (date: string | undefined, idBase: string, label: string, to: string) => {
+      if (!date) return;
+      const days = Math.round((+new Date(date) - t0) / 86400000);
+      const b = bucketOf(days);
+      if (b === null) return;
+      const phrase = b === -1 ? "has EXPIRED — action overdue" : `expires in ${days} day${days === 1 ? "" : "s"} (≤ ${b}-day intimation)`;
+      events.push({ id: `EXP-${idBase}-${b}`, to, message: `${label} ${phrase}.`, tone: b === -1 || b === 3 ? "bad" : "warn" });
+    };
+    applications.forEach((a) => { if (a.status === "issued") push(a.expiryDate || a.validTo, `PASS-${a.id}`, `${a.subject}: ${a.passType} pass ${a.id}`, "entity"); });
+    contracts.forEach((c) => { if (c.status === "active") push(c.end, `CON-${c.id}`, `Contract ${c.id} · ${c.counterparty}`, "entity"); });
+    individuals.forEach((i) => push(i.avsecTrainingExpiry, `TRN-${i.id}`, `${i.name}: AVSEC training`, "entity"));
+
+    if (events.length) {
+      setNotifications((prev) => {
+        const have = new Set(prev.map((n) => n.id));
+        const add = events.filter((e) => !have.has(e.id)).map((e) => ({ id: e.id, ts: now(), to: e.to, type: "expiry", message: e.message, tone: e.tone, read: false }));
+        return add.length ? [...add, ...prev] : prev;
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const setEntityZones: DataCtx["setEntityZones"] = (entityId, zones) => {
     setEntities((x) => x.map((e) => (e.id === entityId ? { ...e, entitledZones: zones } : e)));
     log("edit_entity_zones", entityId, `Entitled zones set to ${zones.join(" ") || "—"}`);

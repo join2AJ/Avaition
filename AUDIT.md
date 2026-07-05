@@ -59,6 +59,8 @@ Status: ☐ open · ☑ fixed.
   reject), BCAS decides at committee (approve / reject), Operator issues & prints, Entity resubmits or
   surrenders. Reason is mandatory on clarification/reject/surrender; every transition is timestamped in a
   Step-history panel, written to the login-wise audit, and intimates the entity/BCAS on key changes.
-- ☐ **D2 · S2 — Expiry-driven notifications missing.** Notifications are termination-driven only; add
-  the scheduled 30/14/3-day expiry intimations. *(queued)*
+- ☑ **D2 · S2 — Expiry-driven notifications added.** On load the store scans every live pass, active
+  contract and AVSEC-training date and raises 30 / 14 / 3-day (and already-expired) intimations into the
+  notification bell. Each carries a deterministic bucket-scoped id so reloads never duplicate it; 3-day
+  and expired fire red, wider windows amber.
 - ☐ **D3 · S2 — Contract renewal flow.** Re-confirm zones at renewal. *(queued)*

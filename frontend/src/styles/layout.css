@@ -495,6 +495,7 @@
 .zone-opt { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface-card); font-size: 12px; font-weight: 600; color: var(--text-secondary); transition: var(--transition); }
 .zone-opt.on { background: var(--navy-500); color: #fff; border-color: var(--navy-500); }
 .zone-opt.sra:not(.on) { border-color: #e7c4c4; color: var(--red-500); }
+.zone-opt.over { background: var(--red-500); border-color: var(--red-500); color: #fff; box-shadow: 0 0 0 2px var(--red-100); }
 .check-row { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-body); }
 .check-row input { width: 17px; height: 17px; accent-color: var(--navy-500); }
 .create-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; border-top: 1px solid var(--border-hairline); padding-top: 16px; }

@@ -102,12 +102,20 @@ export default function Create() {
   const escortInd = individuals.find((i) => i.name === escort);
   const escortValid = !needsEscort || (!!escortInd && requestedSra.every((z) => (escortInd.zones ?? []).includes(z)));
 
+  // Company gating (§3) — a pass can never request a zone the sponsoring entity
+  // was not itself entitled to at onboarding. Autofill respects this, but a
+  // manual toggle must not slip past it; over-entitlement blocks issuance
+  // (only Admin, acting for BCAS, may override).
+  const entityZoneSet = new Set(entities.find((e) => e.id === entityId)?.entitledZones ?? []);
+  const overZones = zones.filter((z) => !entityZoneSet.has(z));
+  const overEntitlement = overZones.length > 0 && !isAdmin;
+
   // §9 Stop List screen + §8.3.4.3 TAEP 30-day annual cap.
   const stopHit = pillar === "MAN" && subject.trim() ? isStopListed(subject) : undefined;
   const proposedDays = Math.max(1, Math.round((+new Date(validTo.to) - +new Date(validFrom)) / 86400000));
   const taepUsed = pillar === "MAN" && subject.trim() ? taepDaysUsed(subject) : 0;
   const taepOver = passType === "TAEP" && (taepUsed + proposedDays) > 30;
-  const blockedSubmit = !subject.trim() || !!done || !!stopHit || (taepOver && !bcasApproval) || !escortValid;
+  const blockedSubmit = !subject.trim() || !!done || !!stopHit || (taepOver && !bcasApproval) || !escortValid || overEntitlement;
 
   const submitPass = () => {
     if (stopHit) { screenStopList(subject); return; }
@@ -217,12 +225,22 @@ export default function Create() {
 
           <div className="fld"><span className="fld-l">Zones requested <ClauseBadge>need-to-access</ClauseBadge></span>
             <div className="zone-pick">
-              {ZONES.map((z) => (
-                <button key={z.code} className={`zone-opt ${zones.includes(z.code) ? "on" : ""} ${z.sra ? "sra" : ""}`} onClick={() => toggleZone(z.code)} title={z.label}>
-                  <span className="mono">{z.code}</span>{zones.includes(z.code) && <Check size={11} />}
-                </button>
-              ))}
+              {ZONES.map((z) => {
+                const on = zones.includes(z.code);
+                const over = on && !entityZoneSet.has(z.code);
+                return (
+                  <button key={z.code} className={`zone-opt ${on ? "on" : ""} ${z.sra ? "sra" : ""} ${over ? "over" : ""}`} onClick={() => toggleZone(z.code)} title={over ? `${z.label} — entity not entitled to this zone` : z.label}>
+                    <span className="mono">{z.code}</span>{on && <Check size={11} />}
+                  </button>
+                );
+              })}
             </div>
+            {overZones.length > 0 && (
+              <span className="fld-hint" style={{ color: isAdmin ? "var(--amber-700)" : "var(--red-700)" }}>
+                {isAdmin ? "Admin override: " : "⛔ "}Zone(s) <b className="mono">{overZones.join(" ")}</b> are outside the sponsoring entity’s entitled set (§3).
+                {isAdmin ? " Proceeding on BCAS authority." : " Remove them or have the entity’s entitlement extended before issuance."}
+              </span>
+            )}
           </div>
 
           {needsEscort && (
@@ -267,7 +285,7 @@ export default function Create() {
           <div className="create-foot">
             <span className="muted" style={{ fontSize: 12 }}>On save: Stop List check + TAEP cap, then the category checklist auto-loads (Uploaded → Verified before advancing).</span>
             <button className="btn btn-brand" disabled={blockedSubmit} onClick={submitPass}>
-              {done ?? (stopHit ? <>Blocked</> : <>Raise pass <ArrowRight size={15} /></>)}
+              {done ?? (stopHit || overEntitlement ? <>Blocked</> : <>Raise pass <ArrowRight size={15} /></>)}
             </button>
           </div>
         </section>

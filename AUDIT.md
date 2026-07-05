@@ -51,6 +51,11 @@ Status: ☐ open · ☑ fixed.
   pass as valid, ignoring its validity date — a card past its `validTo` would still read "Valid". Fix:
   the gate now checks expiry and shows "EXPIRED on <date> — do not admit (§7A)" for a lapsed pass, and
   logs the verification as a warning. Verified end-to-end.
+- ☑ **E2 · S2 — Zone request could exceed entity entitlement.** Company∩role gating was applied only on
+  autofill; a manual zone toggle on Create slipped past it, letting a pass request a zone the sponsoring
+  entity was never granted (§3). Fix: any requested zone outside the entity's entitled set is flagged red
+  and hard-blocks issuance for Operator/Entity; only Admin (acting on BCAS authority) may override, with
+  an explicit on-screen note. Verified for both roles.
 
 ## C. Application security
 

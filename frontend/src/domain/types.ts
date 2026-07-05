@@ -46,6 +46,10 @@ export interface GuidelineClause {
   description: string;
 }
 
+export interface Signatory { name: string; designation: string; certifiedBy: string; dsc?: string; }
+export interface EntityDoc { name: string; reference?: string; expiry?: string; fileName?: string; }
+export interface EntityJobRole { role: string; zones: string[]; justification: string; }
+
 export interface Entity {
   id: string;
   name: string;
@@ -56,6 +60,9 @@ export interface Entity {
   contractEnd: string;
   aopLinked: boolean;
   entitledZones: string[]; // zone codes granted at onboarding / renewal
+  signatories?: Signatory[];
+  docs?: EntityDoc[];
+  jobRoles?: EntityJobRole[];
 }
 
 export interface Individual {

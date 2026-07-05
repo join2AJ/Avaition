@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import Create from "./pages/Create";
+import Checklist from "./pages/Checklist";
 import Verify from "./pages/Verify";
 import AccessControl from "./pages/AccessControl";
 import ZoneAccess from "./pages/ZoneAccess";
@@ -35,6 +36,7 @@ export default function App() {
               <Routes>
                 <Route index element={session?.role === "cisf" ? <Navigate to="/app/verify" replace /> : <Dashboard />} />
                 <Route path="create" element={<Create />} />
+                <Route path="checklist" element={<Checklist />} />
                 <Route path="applications" element={<Applications />} />
                 <Route path="applications/:id" element={<Applications />} />
                 <Route path="verify" element={<Verify />} />

@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FileStack, CalendarClock, Building2, ShieldAlert,
-  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, type LucideIcon,
+  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, ListChecks, type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/domain/types";
 
@@ -17,6 +17,7 @@ const ALL: Record<string, NavItem> = {
   dashboard: { to: "/app", label: "Dashboard", icon: LayoutDashboard },
   create: { to: "/app/create", label: "Create", icon: PlusCircle },
   applications: { to: "/app/applications", label: "Applications", icon: FileStack },
+  checklist: { to: "/app/checklist", label: "Checklists", icon: ListChecks },
   committees: { to: "/app/committees", label: "Committee agenda", icon: CalendarClock },
   entities: { to: "/app/entities", label: "Entity onboarding", icon: Building2 },
   zones: { to: "/app/zones", label: "Zones & escalation", icon: Map },
@@ -30,11 +31,11 @@ const ALL: Record<string, NavItem> = {
 };
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.users, ALL.access, ALL.audit],
-  bcas: [ALL.dashboard, ALL.applications, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.users, ALL.audit],
-  operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.zoneaccess, ALL.users, ALL.penalties],
+  admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.users, ALL.access, ALL.audit],
+  bcas: [ALL.dashboard, ALL.applications, ALL.checklist, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.users, ALL.audit],
+  operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.zoneaccess, ALL.users, ALL.penalties],
   cisf: [ALL.verify],
-  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.zones, ALL.profile],
-  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.profile],
-  individual: [ALL.dashboard, ALL.applications],
+  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.entities, ALL.zones, ALL.profile],
+  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.profile],
+  individual: [ALL.dashboard, ALL.applications, ALL.checklist],
 };

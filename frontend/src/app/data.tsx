@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Application, Entity, Individual, Pillar, PassType } from "@/domain/types";
+import type { Application, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole } from "@/domain/types";
 import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, type AuditEntry } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
@@ -30,7 +30,11 @@ function now(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-export interface NewEntity { name: string; category: string; strength: number; policyRef: string; }
+export interface NewEntity {
+  name: string; category: string; strength: number; policyRef: string;
+  contractStart?: string; contractEnd?: string;
+  signatories?: Signatory[]; docs?: EntityDoc[]; jobRoles?: EntityJobRole[];
+}
 export interface NewIndividual { entityId: string; name: string; jobRole: string; loginAuthorized: boolean; }
 export interface NewApplication {
   pillar: Pillar; entityId: string; subject: string; passType: PassType; zones: string[];
@@ -122,13 +126,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const createEntity: DataCtx["createEntity"] = (e) => {
+    // Entity's entitled zones seed from the union of its job-role zone requests.
+    const zoneSet = new Set<string>();
+    (e.jobRoles ?? []).forEach((jr) => jr.zones.forEach((z) => zoneSet.add(z)));
     const ent: Entity = {
       id: nextId(entities, "ENT-", 2), name: e.name, category: e.category,
-      status: "active", strength: e.strength, contractStart: now().slice(0, 10), contractEnd: "2028-03-31",
-      aopLinked: false, entitledZones: [],
+      status: "active", strength: e.strength,
+      contractStart: e.contractStart || now().slice(0, 10), contractEnd: e.contractEnd || "2028-03-31",
+      aopLinked: (e.docs ?? []).some((d) => /AOP|NSOP/i.test(d.name) && (d.reference || d.fileName)),
+      entitledZones: Array.from(zoneSet),
+      signatories: e.signatories, docs: e.docs, jobRoles: e.jobRoles,
     };
     setEntities((x) => [...x, ent]);
-    log("create_entity", ent.id, `${ent.name} · ${ent.category} · policy ${e.policyRef}`);
+    // Register any new job roles + their zone-need matrix.
+    (e.jobRoles ?? []).forEach((jr) => { if (jr.role) setRoleZones_((m) => ({ ...m, [jr.role]: jr.zones })); });
+    const sigCount = (e.signatories ?? []).length;
+    log("create_entity", ent.id,
+      `${ent.name} · ${ent.category} · ${sigCount} signatories · ${(e.docs ?? []).length} docs · policy ${e.policyRef}`);
     return ent;
   };
 

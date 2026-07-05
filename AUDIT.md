@@ -56,6 +56,10 @@ Status: ☐ open · ☑ fixed.
   entity was never granted (§3). Fix: any requested zone outside the entity's entitled set is flagged red
   and hard-blocks issuance for Operator/Entity; only Admin (acting on BCAS authority) may override, with
   an explicit on-screen note. Verified for both roles.
+- ☑ **E3 · S2 — Committee agenda was disconnected from live state.** The Committee page read applications
+  from the static demo `api`, so a pass forwarded to committee (D1) never appeared in the committee-ready
+  pool and the count was stale. Fix: the page now reads the live `useData()` store — forwarding a pass
+  immediately reflects on the agenda. Verified end-to-end.
 
 ## C. Application security
 

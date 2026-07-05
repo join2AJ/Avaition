@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarClock, Users2, CheckCircle2, ChevronRight, ArrowRight } from "lucide-react";
-import type { Application, Entity } from "@/domain/types";
 import type { Committee } from "@/lib/demoData";
 import { api, entityName } from "@/lib/api";
 import { useAuth } from "@/app/auth";
@@ -26,10 +25,8 @@ const COMMITTEE_STAGES = [
 
 export default function Committees() {
   const { session } = useAuth();
-  const { log } = useData();
+  const { log, applications: apps, entities } = useData();
   const [committees, setCommittees] = useState<Committee[]>([]);
-  const [apps, setApps] = useState<Application[]>([]);
-  const [entities, setEntities] = useState<Entity[]>([]);
   const [propDate, setPropDate] = useState("");
   const [propTime, setPropTime] = useState("10:00");
   const [agency, setAgency] = useState("Pass Section (Aerodrome)");
@@ -37,11 +34,7 @@ export default function Committees() {
   const isAdmin = session?.role === "admin";
   const canPropose = ["admin", "operator", "bcas"].includes(session!.role);
 
-  useEffect(() => {
-    api.listCommittees().then(setCommittees);
-    api.listApplications().then(setApps);
-    api.listEntities().then(setEntities);
-  }, []);
+  useEffect(() => { api.listCommittees().then(setCommittees); }, []);
 
   const ready = apps.filter((a) => a.status === "committee_scheduled");
   const byId = (id: string) => apps.find((a) => a.id === id);

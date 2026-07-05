@@ -4,6 +4,7 @@ import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, type 
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
+import { trainingState, nextRefresherDate } from "@/domain/training";
 import { BASE_ROLES, newRole, type RoleDef, type Vertical, type Crud } from "@/domain/permissions";
 
 // Persist the working set for the session so created records survive reloads.
@@ -56,6 +57,8 @@ interface DataCtx {
   createContract: (c: NewContract) => Contract;
   terminateContract: (contractId: string) => void;
   advanceApproval: (entityId: string) => void;
+  applyTrainingHolds: () => number;                       // §13 — auto-deactivate lapsed-training holders' passes
+  recordAvsecRefresher: (individualId: string) => void;   // §13 — refresher recorded → reactivate held passes
   markNotificationsRead: () => void;
   stopList: StopListEntry[];
   isStopListed: (name: string) => StopListEntry | undefined;
@@ -300,11 +303,43 @@ export function DataProvider({ children }: { children: ReactNode }) {
     else if (to === "withdrawn") { notify("entity", "pass_withdrawn", `${app.subject}: pass ${appId} WITHDRAWN${opts?.note ? ` — ${opts.note}` : ""}. Surrender the card immediately (§11).`, "bad"); notify("bcas", "pass_withdrawn", `${app.subject}: ${appId} withdrawn (§11)${opts?.note ? ` — ${opts.note}` : ""}.`, "bad"); }
   };
 
+  // §13 — AVSEC training lapse suspends access. Any currently-issued MAN pass
+  // whose holder's AVSEC refresher has expired is auto-deactivated (compliance
+  // hold), pending a recorded refresher. Returns how many passes were held.
+  const applyTrainingHolds: DataCtx["applyTrainingHolds"] = () => {
+    const lapsed = new Set(individuals.filter((i) => trainingState(i.avsecTrainingExpiry) === "lapsed").map((i) => i.name));
+    const targets = applications.filter((a) => a.pillar === "MAN" && a.status === "issued" && lapsed.has(a.subject));
+    if (targets.length === 0) { log("training_hold_run", "AVSEC", "No lapsed-training holders with a live pass (§13)"); return 0; }
+    const ts = now();
+    const ids = new Set(targets.map((t) => t.id));
+    setApplications((x) => x.map((a) => (ids.has(a.id)
+      ? { ...a, status: "deactivated", stepLog: [...(a.stepLog ?? []), { stage: "handover", at: ts, by: session?.name ?? "system", action: "Deactivate (compliance hold)", note: "AVSEC training lapsed — access held until refresher recorded (§13)" }] }
+      : a)));
+    targets.forEach((t) => notify("entity", "training_hold", `${t.subject}: AEP ${t.id} deactivated — AVSEC training lapsed. Record the refresher to reactivate (§13).`, "bad"));
+    notify("bcas", "training_hold", `${targets.length} AEP(s) deactivated for lapsed AVSEC training (§13).`, "warn");
+    log("training_hold_run", "AVSEC", `${targets.length} pass(es) deactivated for lapsed AVSEC training (§13)`, "warn");
+    return targets.length;
+  };
+
+  const recordAvsecRefresher: DataCtx["recordAvsecRefresher"] = (individualId) => {
+    const ind = individuals.find((i) => i.id === individualId);
+    if (!ind) return;
+    const newExpiry = nextRefresherDate();
+    setIndividuals((x) => x.map((i) => (i.id === individualId ? { ...i, avsecTrainingExpiry: newExpiry } : i)));
+    // Reactivate any pass held specifically for this holder's training lapse.
+    const ts = now();
+    setApplications((x) => x.map((a) => (a.subject === ind.name && a.status === "deactivated"
+      ? { ...a, status: "issued", stepLog: [...(a.stepLog ?? []), { stage: "handover", at: ts, by: session?.name ?? "system", action: "Reactivate", note: `AVSEC refresher recorded — valid to ${newExpiry} (§13)` }] }
+      : a)));
+    log("avsec_refresher", individualId, `${ind.name}: AVSEC refresher recorded — valid to ${newExpiry}`, "ok");
+    notify("entity", "training_ok", `${ind.name}: AVSEC refresher recorded (valid to ${newExpiry}) — any held pass reactivated (§13).`, "ok");
+  };
+
   return (
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, roleZones, roles,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract,
-      advanceApproval, markNotificationsRead,
+      advanceApproval, applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,
       stopList, isStopListed, addStopList, removeStopList, taepDaysUsed, screenStopList,
       setEntityZones, setRoleZones, createRole, setPermission, recordSlaJustification, log,
     }}>

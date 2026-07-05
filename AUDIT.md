@@ -23,7 +23,11 @@ Status: ☐ open · ☑ fixed.
   Verify screen now refuses any pass not in `issued`/`approved` ("Not currently issued — Withdrawn").
   Compliance surfaces dedicated **Parked/deactivated** and **Withdrawn** tiles, keeping the SLA metric
   pure to in-flight processing.
-- ☐ **A5 · S2 — AVSEC-training expiry → auto-park (§10).** Not modelled. *(queued)*
+- ☑ **A5 · S2 — AVSEC-training expiry → auto-deactivate (§13).** Each individual now carries an AVSEC
+  refresher-validity date (1-year cycle). Entity & individual status shows a training-compliance table
+  (Current / Refresher-due / Lapsed, sorted worst-first). “Apply training holds” deactivates any live
+  AEP whose holder’s training has lapsed and intimates the entity/BCAS; “Record refresher” renews the
+  validity and reactivates the held pass. Verified end-to-end.
 - ☐ **A6 · S2 — Escort binding for TAEP/material into SRA (§8.3.4.12 / §12B).** Material can only enter
   a zone the *named escorting AEP holder* is entitled to — the escort is not captured. *(queued)*
 

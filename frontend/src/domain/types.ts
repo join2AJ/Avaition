@@ -111,6 +111,7 @@ export interface Individual {
   religion?: string;
   bloodGroup?: string;
   zones?: string[];
+  avsecTrainingExpiry?: string; // AVSEC awareness/refresher validity — 1 year (§13)
 }
 
 export interface StepLog {

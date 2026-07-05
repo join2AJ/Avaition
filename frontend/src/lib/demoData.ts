@@ -37,12 +37,12 @@ export const ENTITIES: Entity[] = [
 ];
 
 export const INDIVIDUALS: Individual[] = [
-  { id: "IND-01", entityId: "ENT-01", name: "R. Sharma", jobRole: "Ramp Agent", hasLogin: true, state: "Uttar Pradesh", district: "Lucknow", religion: "Hindu", bloodGroup: "O+", zones: ["A", "D", "P"] },
-  { id: "IND-02", entityId: "ENT-01", name: "M. Iyer", jobRole: "Baggage Handler", hasLogin: false, state: "Tamil Nadu", district: "Chennai", religion: "Hindu", bloodGroup: "B+", zones: ["A", "D", "B"] },
-  { id: "IND-03", entityId: "ENT-03", name: "S. Khan", jobRole: "Catering Loader", hasLogin: true, state: "Uttar Pradesh", district: "Kanpur", religion: "Muslim", bloodGroup: "A+", zones: ["T", "P"] },
-  { id: "IND-04", entityId: "ENT-04", name: "D. Rao", jobRole: "Fuel Technician", hasLogin: false, state: "Telangana", district: "Hyderabad", religion: "Hindu", bloodGroup: "AB+", zones: ["P", "T"] },
-  { id: "IND-05", entityId: "ENT-02", name: "P. Nair", jobRole: "Security Screener", hasLogin: false, state: "Kerala", district: "Kochi", religion: "Christian", bloodGroup: "O-", zones: ["T", "Si", "P"] },
-  { id: "IND-06", entityId: "ENT-05", name: "A. Reddy", jobRole: "Cargo Handler", hasLogin: false, state: "Andhra Pradesh", district: "Vijayawada", religion: "Hindu", bloodGroup: "B-", zones: ["Cd", "Csd"] },
+  { id: "IND-01", entityId: "ENT-01", name: "R. Sharma", jobRole: "Ramp Agent", hasLogin: true, state: "Uttar Pradesh", district: "Lucknow", religion: "Hindu", bloodGroup: "O+", zones: ["A", "D", "P"], avsecTrainingExpiry: "2027-02-10" },
+  { id: "IND-02", entityId: "ENT-01", name: "M. Iyer", jobRole: "Baggage Handler", hasLogin: false, state: "Tamil Nadu", district: "Chennai", religion: "Hindu", bloodGroup: "B+", zones: ["A", "D", "B"], avsecTrainingExpiry: "2026-07-24" },
+  { id: "IND-03", entityId: "ENT-03", name: "S. Khan", jobRole: "Catering Loader", hasLogin: true, state: "Uttar Pradesh", district: "Kanpur", religion: "Muslim", bloodGroup: "A+", zones: ["T", "P"], avsecTrainingExpiry: "2026-04-22" },
+  { id: "IND-04", entityId: "ENT-04", name: "D. Rao", jobRole: "Fuel Technician", hasLogin: false, state: "Telangana", district: "Hyderabad", religion: "Hindu", bloodGroup: "AB+", zones: ["P", "T"], avsecTrainingExpiry: "2026-12-01" },
+  { id: "IND-05", entityId: "ENT-02", name: "P. Nair", jobRole: "Security Screener", hasLogin: false, state: "Kerala", district: "Kochi", religion: "Christian", bloodGroup: "O-", zones: ["T", "Si", "P"], avsecTrainingExpiry: "2026-07-30" },
+  { id: "IND-06", entityId: "ENT-05", name: "A. Reddy", jobRole: "Cargo Handler", hasLogin: false, state: "Andhra Pradesh", district: "Vijayawada", religion: "Hindu", bloodGroup: "B-", zones: ["Cd", "Csd"], avsecTrainingExpiry: "2026-05-15" },
 ];
 
 export interface StopListEntry { name: string; reason: string; source: string; since: string; }

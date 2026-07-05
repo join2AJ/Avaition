@@ -65,6 +65,11 @@ Status: ☐ open · ☑ fixed.
   §10.7 record. Fix: surrenders are now in the live store; surrendering/withdrawing a pass and
   terminating a contract each append a dated record (exit today, due +7 days) that the tracker shows
   immediately. Verified end-to-end.
+- ☑ **E5 · S2 — Penalty workflow was read-only.** The Surrenders & penalties columns for entity
+  justification and BCAS penalty were static. Now they are drivable and role-gated: the entity/operator
+  records a late-surrender justification (§10.7); BCAS raises a penalty with written justification and
+  later resolves it (§10.8); each action notifies the counterparty and writes the audit. Days-late is
+  computed live against the 7-day due date. Verified end-to-end.
 
 ## C. Application security
 

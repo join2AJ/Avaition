@@ -58,6 +58,9 @@ interface DataCtx {
   terminateContract: (contractId: string) => void;
   renewContract: (contractId: string, newEnd: string, confirmedZones: string[]) => void;
   advanceApproval: (entityId: string) => void;
+  recordSurrenderJustification: (id: string, text: string) => void;  // §10.7 — entity's late-surrender reason
+  raiseSurrenderPenalty: (id: string, text: string) => void;         // §10.8 — BCAS penalty with justification
+  resolveSurrenderPenalty: (id: string) => void;
   applyTrainingHolds: () => number;                       // §13 — auto-deactivate lapsed-training holders' passes
   recordAvsecRefresher: (individualId: string) => void;   // §13 — refresher recorded → reactivate held passes
   markNotificationsRead: () => void;
@@ -247,6 +250,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (shrunk.size) notify("individual", "reapply_required", `Zone(s) dropped at renewal of ${contractId}: ${Array.from(shrunk).join(", ")} must re-apply for the removed access.`, "warn");
   };
 
+  const recordSurrenderJustification: DataCtx["recordSurrenderJustification"] = (id, text) => {
+    setSurrenders((x) => x.map((s) => (s.id === id ? { ...s, entityJustification: text } : s)));
+    const s = surrenders.find((r) => r.id === id);
+    log("surrender_justification", id, `Entity justification: ${text}`, "warn");
+    notify("bcas", "surrender_justification", `${s?.holder ?? id} (${s?.applicationId ?? ""}): entity submitted a late-surrender justification — ${text} (§10.7).`, "warn");
+  };
+  const raiseSurrenderPenalty: DataCtx["raiseSurrenderPenalty"] = (id, text) => {
+    setSurrenders((x) => x.map((s) => (s.id === id ? { ...s, penalty: text, penaltyStatus: "open" } : s)));
+    const s = surrenders.find((r) => r.id === id);
+    log("raise_penalty", id, `BCAS penalty raised: ${text}`, "bad");
+    notify("entity", "penalty_raised", `Penalty raised on ${s?.applicationId ?? id} (${s?.holder ?? ""}): ${text} (§10.8).`, "bad");
+  };
+  const resolveSurrenderPenalty: DataCtx["resolveSurrenderPenalty"] = (id) => {
+    setSurrenders((x) => x.map((s) => (s.id === id ? { ...s, penaltyStatus: "resolved" } : s)));
+    log("resolve_penalty", id, "Penalty resolved / closed", "ok");
+  };
+
   const advanceApproval: DataCtx["advanceApproval"] = (entityId) => {
     const order: ApprovalStage[] = ["registration", "documentation", "matrix", "verification", "bcas_approved"];
     setEntities((x) => x.map((e) => {
@@ -418,7 +438,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, surrenders, roleZones, roles,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
-      advanceApproval, applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,
+      advanceApproval, recordSurrenderJustification, raiseSurrenderPenalty, resolveSurrenderPenalty,
+      applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,
       stopList, isStopListed, addStopList, removeStopList, taepDaysUsed, screenStopList,
       setEntityZones, setRoleZones, createRole, setPermission, recordSlaJustification, log,
     }}>

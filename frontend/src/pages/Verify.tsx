@@ -4,6 +4,7 @@ import type { Application } from "@/domain/types";
 import { useData } from "@/app/data";
 import { entityName } from "@/lib/api";
 import { STATUS_META } from "@/domain/status";
+import { today } from "@/domain/entitlements";
 import { Pill, PillarBadge, ZoneChips, ClauseBadge } from "@/components/ui";
 
 // CISF gate verification — search-only. Officer types a pass number
@@ -21,11 +22,17 @@ export default function Verify() {
       (a) => a.id.toLowerCase() === needle || a.id.toLowerCase().includes(needle) || a.subject.toLowerCase().includes(needle),
     );
     setResult(hit ?? null);
-    if (hit) log("verify", hit.id, `${hit.pillar} ${hit.passType} verified at gate`, hit.status === "issued" ? "ok" : "warn");
-    else log("verify_miss", q.trim() || "—", "No record found at gate", "bad");
+    if (hit) {
+      const exp = hit.expiryDate || hit.validTo;
+      const isExpired = !!exp && new Date(exp) < new Date(today());
+      const ok = (hit.status === "issued" || hit.status === "approved") && !isExpired;
+      log("verify", hit.id, `${hit.pillar} ${hit.passType} verified at gate${isExpired ? " · EXPIRED" : ""}`, ok ? "ok" : "warn");
+    } else log("verify_miss", q.trim() || "—", "No record found at gate", "bad");
   };
 
-  const valid = result && (result.status === "issued" || result.status === "approved");
+  const expDate = result && (result.expiryDate || result.validTo);
+  const expired = !!expDate && new Date(expDate) < new Date(today());
+  const valid = result && (result.status === "issued" || result.status === "approved") && !expired;
 
   return (
     <div className="page verify-page">
@@ -62,7 +69,9 @@ export default function Verify() {
         <div className={`card verify-result ${valid ? "ok" : "warn"}`}>
           <div className="verify-banner">
             {valid ? <><CheckCircle2 size={18} /> Valid — match against the physical card</>
-                   : <><XCircle size={18} /> Not currently issued — {STATUS_META[result.status].label}. Verify before admitting.</>}
+                   : expired && (result.status === "issued" || result.status === "approved")
+                     ? <><XCircle size={18} /> EXPIRED on {expDate} — do not admit. Direct holder to Pass Section (§7A).</>
+                     : <><XCircle size={18} /> Not currently issued — {STATUS_META[result.status].label}. Verify before admitting.</>}
           </div>
           <div className="verify-body">
             <div className="vr-row"><span className="vr-k">Pass no.</span><span className="mono vr-v">{result.id}</span></div>

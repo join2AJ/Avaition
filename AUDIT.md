@@ -45,6 +45,13 @@ Status: ☐ open · ☑ fixed.
   20%-of-population audit sample as a progress meter (audited YTD vs target) plus a monthly
   surprise-check chart with finding counts, per the AEP Checking Committee mandate.
 
+## E. Second-pass findings (post-remediation audit)
+
+- ☑ **E1 · S1 — Gate accepted expired cards.** The CISF Verify screen treated any `issued`/`approved`
+  pass as valid, ignoring its validity date — a card past its `validTo` would still read "Valid". Fix:
+  the gate now checks expiry and shows "EXPIRED on <date> — do not admit (§7A)" for a lapsed pass, and
+  logs the verification as a warning. Verified end-to-end.
+
 ## C. Application security
 
 - ☑ **C1 · S1 — No route authorization.** Any signed-in user could URL-navigate to any page

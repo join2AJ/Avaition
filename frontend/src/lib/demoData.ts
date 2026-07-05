@@ -120,6 +120,7 @@ export const APPLICATIONS: Application[] = [
   { id: "APP-2260", pillar: "MAN", entityId: "ENT-03", subject: "N. Gupta", passType: "TAEP", zones: ["T"], status: "rejected", createdBy: "Pass Section", createdAt: "2026-06-30", clauseRef: "§5" },
   { id: "APP-2261", pillar: "MAN", entityId: "ENT-01", subject: "K. Menon", passType: "BAEP", zones: ["A", "T"], status: "parked", createdBy: "Pass Section", createdAt: "2026-04-20", expiryDate: "2027-04-19", clauseRef: "§5",
     stepLog: [{ stage: "handover", at: "2026-04-20 10:15", by: "Pass Section Staff", action: "Issue & print pass" }, { stage: "handover", at: "2026-06-22 09:40", by: "Pass Section Staff", action: "Park (non-use)", note: "No swipe for 60 days — parked pending re-confirmation (§10.6)" }] },
+  { id: "APP-2263", pillar: "MAN", entityId: "ENT-03", subject: "T. Fernandes", passType: "TAEP", zones: ["T"], status: "issued", createdBy: "Pass Section", createdAt: "2026-05-20", validFrom: "2026-05-20", validTo: "2026-06-15", expiryDate: "2026-06-15", clauseRef: "§5" },
   { id: "APP-2262", pillar: "MAN", entityId: "ENT-04", subject: "B. Kulkarni", passType: "BAEP", zones: ["P", "T"], status: "withdrawn", createdBy: "Pass Section", createdAt: "2026-03-10", clauseRef: "§5",
     stepLog: [{ stage: "handover", at: "2026-03-10 11:00", by: "Pass Section Staff", action: "Issue & print pass" }, { stage: "closed", at: "2026-06-28 16:20", by: "BCAS Officer", action: "Withdraw (adverse BGC / cancel)", note: "Adverse police verification received — pass withdrawn (§11)" }] },
 ];

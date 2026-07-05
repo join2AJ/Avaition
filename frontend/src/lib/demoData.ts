@@ -45,6 +45,19 @@ export const INDIVIDUALS: Individual[] = [
   { id: "IND-06", entityId: "ENT-05", name: "A. Reddy", jobRole: "Cargo Handler", hasLogin: false, state: "Andhra Pradesh", district: "Vijayawada", religion: "Hindu", bloodGroup: "B-", zones: ["Cd", "Csd"], avsecTrainingExpiry: "2026-05-15" },
 ];
 
+// §15 — AEP Checking Committee monthly surprise checks + annual 20% audit sample.
+export interface SurpriseCheck { m: string; checks: number; findings: number; }
+export const SURPRISE_CHECKS: SurpriseCheck[] = [
+  { m: "Jan", checks: 36, findings: 2 },
+  { m: "Feb", checks: 41, findings: 1 },
+  { m: "Mar", checks: 39, findings: 4 },
+  { m: "Apr", checks: 44, findings: 2 },
+  { m: "May", checks: 38, findings: 3 },
+  { m: "Jun", checks: 47, findings: 1 },
+  { m: "Jul", checks: 12, findings: 0 },
+];
+export const AUDITED_THIS_YEAR = 214; // AEP holders physically audited YTD (20% annual sample · §15)
+
 export interface StopListEntry { name: string; reason: string; source: string; since: string; }
 // BCAS/Operator-maintained bar list — screened before EVERY issuance (§9).
 export const STOP_LIST: StopListEntry[] = [

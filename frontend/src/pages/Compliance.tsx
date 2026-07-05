@@ -1,7 +1,8 @@
 import { useMemo } from "react";
-import { ShieldCheck, ShieldAlert, TimerReset, Ban, Gauge, PauseCircle } from "lucide-react";
+import { ShieldCheck, ShieldAlert, TimerReset, Ban, Gauge, PauseCircle, TrendingUp, ClipboardCheck } from "lucide-react";
 import { useData } from "@/app/data";
 import { expiringWithin } from "@/lib/api";
+import { SURPRISE_CHECKS, AUDITED_THIS_YEAR } from "@/lib/demoData";
 import { Pill } from "@/components/ui";
 
 // The core insight surface for BCAS and the Aerodrome Operator: compliance vs
@@ -44,6 +45,26 @@ export default function Compliance() {
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [applications]);
   const zoneMax = Math.max(1, ...zoneDist.map((z) => z[1]));
+
+  // B2 — issuance trend over the last 12 months, from application intake dates.
+  const trend = useMemo(() => {
+    const months: { key: string; label: string; n: number }[] = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: d.toLocaleString("en", { month: "short" }), n: 0 });
+    }
+    const idx = new Map(months.map((m, i) => [m.key, i]));
+    applications.forEach((a) => { const k = (a.createdAt || "").slice(0, 7); if (idx.has(k)) months[idx.get(k)!].n += 1; });
+    return months;
+  }, [applications]);
+  const trendMax = Math.max(1, ...trend.map((m) => m.n));
+
+  // B3 — §15 annual 20% audit sample against the registered AEP population.
+  const population = entities.reduce((s, e) => s + (e.strength || 0), 0);
+  const sampleTarget = Math.ceil(population * 0.2);
+  const samplePct = Math.min(100, Math.round((AUDITED_THIS_YEAR / Math.max(1, sampleTarget)) * 100));
+  const surpriseMax = Math.max(1, ...SURPRISE_CHECKS.map((c) => c.checks));
 
   return (
     <div className="page">
@@ -127,6 +148,46 @@ export default function Compliance() {
                 <span className="rd-label mono">{z}</span>
                 <span className="rd-track"><span className="rd-fill" style={{ width: `${(n / zoneMax) * 100}%`, background: "var(--navy-500)" }} /></span>
                 <span className="rd-pct">{n}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="dash-grid">
+        <section className="card card-pad">
+          <div className="card-head">
+            <span className="section-title"><TrendingUp size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} /> Issuance trend</span>
+            <span className="muted" style={{ fontSize: 12 }}>applications raised · last 12 months</span>
+          </div>
+          <div className="trend-chart">
+            {trend.map((m) => (
+              <div className="trend-col" key={m.key} title={`${m.label}: ${m.n}`}>
+                <span className="trend-bar" style={{ height: `${(m.n / trendMax) * 100}%` }}>{m.n > 0 && <b>{m.n}</b>}</span>
+                <span className="trend-x">{m.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>Point-in-time counts are demo-seeded; the live counter tracks intake dates so BCAS can see load building month-on-month.</p>
+        </section>
+
+        <section className="card card-pad">
+          <div className="card-head">
+            <span className="section-title"><ClipboardCheck size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} /> Audit &amp; surprise checks <span className="badge-clause">§15</span></span>
+            <span className="muted" style={{ fontSize: 12 }}>AEP Checking Committee</span>
+          </div>
+          <div className="audit-sample">
+            <div className="as-head"><span>Annual audit sample (20% of {population.toLocaleString()} holders)</span><b>{AUDITED_THIS_YEAR} / {sampleTarget.toLocaleString()}</b></div>
+            <span className="rd-track"><span className="rd-fill" style={{ width: `${samplePct}%`, background: samplePct >= 60 ? "var(--green-700)" : "var(--amber-500)" }} /></span>
+            <span className="muted" style={{ fontSize: 11.5 }}>{samplePct}% of the mandated annual sample audited year-to-date.</span>
+          </div>
+          <div className="card-head" style={{ marginTop: 18 }}><span className="section-title">Monthly surprise checks</span><span className="muted" style={{ fontSize: 12 }}>checks · findings</span></div>
+          <div className="trend-chart surprise">
+            {SURPRISE_CHECKS.map((c) => (
+              <div className="trend-col" key={c.m} title={`${c.m}: ${c.checks} checks, ${c.findings} findings`}>
+                <span className="trend-bar" style={{ height: `${(c.checks / surpriseMax) * 100}%`, background: c.findings > 0 ? "var(--amber-500)" : "var(--navy-500)" }}><b>{c.checks}</b></span>
+                <span className="trend-x">{c.m}</span>
+                {c.findings > 0 && <span className="surprise-find">{c.findings}⚠</span>}
               </div>
             ))}
           </div>

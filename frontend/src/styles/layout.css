@@ -191,6 +191,19 @@
 .detail-side { display: flex; flex-direction: column; gap: 10px; }
 .detail-side-stack { display: flex; flex-direction: column; gap: 16px; }
 .row-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+
+/* B2/B3 — issuance trend + surprise-check bars, and annual audit-sample meter. */
+.trend-chart { display: flex; align-items: flex-end; gap: 6px; height: 130px; margin-top: 10px; padding-top: 14px; }
+.trend-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; position: relative; }
+.trend-bar { width: 68%; min-height: 3px; background: var(--navy-500); border-radius: 4px 4px 0 0; display: flex; align-items: flex-start; justify-content: center; transition: height var(--transition, .3s) var(--ease-cruise, ease); }
+.trend-bar b { font-size: 9.5px; font-weight: 700; color: #fff; margin-top: 2px; }
+.trend-x { font-size: 10px; color: var(--text-muted); }
+.trend-chart.surprise .trend-bar b { color: #fff; }
+.surprise-find { position: absolute; top: -14px; font-size: 9.5px; font-weight: 700; color: var(--amber-700); }
+.audit-sample { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.audit-sample .as-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; }
+.audit-sample .as-head b { font-family: var(--font-mono); }
+.audit-sample .rd-track { height: 10px; }
 .ref-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 
 /* Lifecycle action panel — role-gated forward actions on an application. */

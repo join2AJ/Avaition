@@ -39,8 +39,11 @@ Status: ☐ open · ☑ fixed.
 - ☑ **B1 · S1 — No compliance-vs-non-compliance surface.** Added a dedicated **Compliance & Insights**
   view: overall compliance rate, non-compliant entities (expired/pending docs), passes expiring in
   30/14/3 days, overdue surrenders, SLA breaches, pillar/zone distribution.
-- ☐ **B2 · S3 — No time-series trends.** Charts are point-in-time counts. *(queued)*
-- ☐ **B3 · S3 — Audit sample (20% annual) & monthly surprise-check tracking not surfaced.** *(queued)*
+- ☑ **B2 · S3 — Time-series trend added.** Compliance now shows a 12-month issuance trend derived from
+  application intake dates, so load can be read month-on-month rather than as a single snapshot.
+- ☑ **B3 · S3 — Audit-sample & surprise-check tracking surfaced (§15).** A tracker shows the annual
+  20%-of-population audit sample as a progress meter (audited YTD vs target) plus a monthly
+  surprise-check chart with finding counts, per the AEP Checking Committee mandate.
 
 ## C. Application security
 

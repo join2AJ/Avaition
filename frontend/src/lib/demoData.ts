@@ -45,6 +45,14 @@ export const INDIVIDUALS: Individual[] = [
   { id: "IND-06", entityId: "ENT-05", name: "A. Reddy", jobRole: "Cargo Handler", hasLogin: false, state: "Andhra Pradesh", district: "Vijayawada", religion: "Hindu", bloodGroup: "B-", zones: ["Cd", "Csd"] },
 ];
 
+export interface StopListEntry { name: string; reason: string; source: string; since: string; }
+// BCAS/Operator-maintained bar list — screened before EVERY issuance (§9).
+export const STOP_LIST: StopListEntry[] = [
+  { name: "V. Malhotra", reason: "AEP not surrendered after termination", source: "Airport Operator", since: "2026-05-12" },
+  { name: "K. Prasad", reason: "Adverse notice — Law Enforcement Agency", source: "BCAS RO", since: "2026-06-01" },
+  { name: "Rahul Verma", reason: "Lost AEP — pending FIR + penalty", source: "BCAS RO", since: "2026-06-20" },
+];
+
 import type { Contract } from "@/domain/types";
 export const CONTRACTS: Contract[] = [
   { id: "CON-01", entityId: "ENT-01", counterparty: "Adani Airports — LBIA", type: "Work Order", start: "2024-04-01", end: "2027-03-31", scope: "Ramp & baggage handling", status: "active" },

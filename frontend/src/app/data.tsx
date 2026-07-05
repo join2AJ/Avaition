@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Application, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage } from "@/domain/types";
-import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, type AuditEntry } from "@/lib/demoData";
+import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, type AuditEntry, type StopListEntry } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
@@ -56,6 +56,12 @@ interface DataCtx {
   terminateContract: (contractId: string) => void;
   advanceApproval: (entityId: string) => void;
   markNotificationsRead: () => void;
+  stopList: StopListEntry[];
+  isStopListed: (name: string) => StopListEntry | undefined;
+  addStopList: (e: StopListEntry) => void;
+  removeStopList: (name: string) => void;
+  taepDaysUsed: (subject: string) => number;   // running TAEP days this calendar year
+  screenStopList: (name: string) => void;       // logs a Stop List hit + urgent notify
   setEntityZones: (entityId: string, zones: string[]) => void;   // BCAS / Admin edit
   setRoleZones: (role: string, zones: string[]) => void;         // BCAS / Admin edit
   createRole: (label: string) => void;                           // Admin / Operator / BCAS
@@ -76,6 +82,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<RoleDef[]>(() => load("aep-roles", BASE_ROLES));
   const [contracts, setContracts] = useState<Contract[]>(() => load("aep-contracts", CONTRACTS));
   const [notifications, setNotifications] = useState<Notification[]>(() => load("aep-notifs", []));
+  const [stopList, setStopList] = useState<StopListEntry[]>(() => load("aep-stoplist", STOP_LIST));
+  useEffect(() => { sessionStorage.setItem("aep-stoplist", JSON.stringify(stopList)); }, [stopList]);
 
   useEffect(() => { sessionStorage.setItem("aep-contracts", JSON.stringify(contracts)); }, [contracts]);
   useEffect(() => { sessionStorage.setItem("aep-notifs", JSON.stringify(notifications)); }, [notifications]);
@@ -168,6 +176,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const isStopListed: DataCtx["isStopListed"] = (name) =>
+    stopList.find((s) => s.name.trim().toLowerCase() === name.trim().toLowerCase());
+  const addStopList: DataCtx["addStopList"] = (e) => { setStopList((x) => [e, ...x]); log("stoplist_add", e.name, `${e.reason} · ${e.source}`, "warn"); };
+  const removeStopList: DataCtx["removeStopList"] = (name) => { setStopList((x) => x.filter((s) => s.name !== name)); log("stoplist_remove", name, "Removed from Stop List"); };
+  const screenStopList: DataCtx["screenStopList"] = (name) => {
+    log("stoplist_hit", name, "Application blocked — name on Stop List (§9)", "bad");
+    notify("operator", "stoplist_hit", `URGENT: ${name} matched the Stop List — application hard-blocked (§9).`, "bad");
+  };
+
+  // Running TAEP days used by an individual this calendar year (§8.3.4.3).
+  const taepDaysUsed: DataCtx["taepDaysUsed"] = (subject) => {
+    const yr = new Date().getFullYear();
+    return applications
+      .filter((a) => a.subject === subject && a.passType === "TAEP" && new Date(a.createdAt).getFullYear() === yr)
+      .reduce((sum, a) => {
+        if (!a.validFrom || !a.validTo) return sum + 1;
+        const d = Math.max(1, Math.round((+new Date(a.validTo) - +new Date(a.validFrom)) / 86400000));
+        return sum + d;
+      }, 0);
+  };
+
   const createRole: DataCtx["createRole"] = (label) => {
     const r = newRole(label);
     setRoles((x) => [...x, r]);
@@ -245,6 +274,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       entities, individuals, applications, audit, contracts, notifications, roleZones, roles,
       createEntity, createIndividual, createApplication, createContract, terminateContract,
       advanceApproval, markNotificationsRead,
+      stopList, isStopListed, addStopList, removeStopList, taepDaysUsed, screenStopList,
       setEntityZones, setRoleZones, createRole, setPermission, recordSlaJustification, log,
     }}>
       {children}

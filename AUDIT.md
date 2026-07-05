@@ -12,10 +12,10 @@ Status: ☐ open · ☑ fixed.
 
 - ☑ **A1 · S1 — Co-terminus validity not enforced (§7A).** A pass could be issued valid beyond its
   contract end / clearance / NSOP-AOP. Fix: `validTo = min(pass-norm, contract end)`.
-- ☐ **A2 · S1 — Stop List gate missing (§9).** Every application must be screened against the Stop
-  List before processing; a hit must hard-block. Currently only named as a stepper label. *(next)*
-- ☐ **A3 · S1 — TAEP 30-day annual cap not tracked (§8.3.4.3).** No running per-individual TAEP-day
-  counter; >30 days must require BCAS approval before issuance. *(next)*
+- ☑ **A2 · S1 — Stop List gate (§9).** Added a Stop List (BCAS/Operator-maintained) screened on every
+  MAN pass; a match hard-blocks issuance, logs a Stop-List-hit and raises an urgent notification.
+- ☑ **A3 · S1 — TAEP 30-day annual cap (§8.3.4.3).** Running per-individual TAEP-day counter on Create;
+  exceeding 30 days blocks until "BCAS approval obtained" is confirmed.
 - ☐ **A4 · S2 — Lifecycle states incomplete (§7B–D).** No Parked (60-day non-use), Deactivated, or
   Withdrawn states; no adverse-BGC cancellation. *(queued)*
 - ☐ **A5 · S2 — AVSEC-training expiry → auto-park (§10).** Not modelled. *(queued)*

@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FileStack, CalendarClock, Building2, ShieldAlert,
-  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, ListChecks, Timer, ClipboardCheck, FileSignature, Gauge, type LucideIcon,
+  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, ListChecks, Timer, ClipboardCheck, FileSignature, Gauge, Ban, type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/domain/types";
 
@@ -25,6 +25,7 @@ const ALL: Record<string, NavItem> = {
   zones: { to: "/app/zones", label: "Zones & escalation", icon: Map },
   zoneaccess: { to: "/app/zone-access", label: "Zone access DB", icon: Map },
   penalties: { to: "/app/penalties", label: "Surrenders · penalties", icon: ShieldAlert },
+  stoplist: { to: "/app/stop-list", label: "Stop List", icon: Ban },
   profile: { to: "/app/profile", label: "Entity profile", icon: IdCard },
   users: { to: "/app/users", label: "Users & roles", icon: Users },
   access: { to: "/app/access", label: "Access control", icon: SlidersHorizontal },
@@ -47,9 +48,9 @@ export function canAccess(role: Role, path: string): boolean {
 }
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.access, ALL.audit],
-  bcas: [ALL.dashboard, ALL.compliance, ALL.applications, ALL.checklist, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.audit],
-  operator: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.users, ALL.penalties],
+  admin: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.users, ALL.access, ALL.audit],
+  bcas: [ALL.dashboard, ALL.compliance, ALL.applications, ALL.checklist, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.users, ALL.audit],
+  operator: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.users],
   cisf: [ALL.verify],
   entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.entities, ALL.contracts, ALL.zones, ALL.profile],
   others: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.contracts, ALL.profile],

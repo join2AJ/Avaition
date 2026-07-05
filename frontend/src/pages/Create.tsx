@@ -24,7 +24,7 @@ const MAN_SUBTYPES = ["BAEP (>31 days)", "TAEP (≤30 days)", "One-Day", "Protoc
 const MATERIAL_SUBTYPES = ["One-Day", "One-month", "Quarterly (3 mo)"];
 
 export default function Create() {
-  const { entities, roleZones, contracts, createEntity, createIndividual, createApplication } = useData();
+  const { entities, roleZones, contracts, createEntity, createIndividual, createApplication, isStopListed, screenStopList, taepDaysUsed } = useData();
   const { session } = useAuth();
   const nav = useNavigate();
   const isAdmin = session?.role === "admin";
@@ -79,10 +79,19 @@ export default function Create() {
   const [iName, setIName] = useState("");
   const [iRole, setIRole] = useState("Ramp Agent");
   const [iLogin, setILogin] = useState(false);
+  const [bcasApproval, setBcasApproval] = useState(false);
 
   const toggleZone = (c: string) => setZones((z) => (z.includes(c) ? z.filter((x) => x !== c) : [...z, c]));
 
+  // §9 Stop List screen + §8.3.4.3 TAEP 30-day annual cap.
+  const stopHit = pillar === "MAN" && subject.trim() ? isStopListed(subject) : undefined;
+  const proposedDays = Math.max(1, Math.round((+new Date(validTo.to) - +new Date(validFrom)) / 86400000));
+  const taepUsed = pillar === "MAN" && subject.trim() ? taepDaysUsed(subject) : 0;
+  const taepOver = passType === "TAEP" && (taepUsed + proposedDays) > 30;
+  const blockedSubmit = !subject.trim() || !!done || !!stopHit || (taepOver && !bcasApproval);
+
   const submitPass = () => {
+    if (stopHit) { screenStopList(subject); return; }
     const subj = pillar === "VEHICLE" && adp ? `${subject} · ADP ${adp}` : subject;
     const app = createApplication({
       pillar, entityId, subject: subj, passType, zones,
@@ -196,10 +205,28 @@ export default function Create() {
             </div>
           </div>
 
+          {stopHit && (
+            <div className="stop-hit">
+              <b>⛔ STOP LIST HIT — issuance hard-blocked (§9).</b>
+              <div>{subject} is on the Stop List: {stopHit.reason} · {stopHit.source} ({stopHit.since}). Application cannot proceed.</div>
+            </div>
+          )}
+          {passType === "TAEP" && subject.trim() && (
+            <div className={`taep-meter ${taepOver ? "over" : ""}`}>
+              <b>TAEP annual cap (§8.3.4.3):</b> {taepUsed} used + {proposedDays} proposed = {taepUsed + proposedDays} / 30 days
+              {taepOver && (
+                <label className="check-row" style={{ marginTop: 6 }}>
+                  <input type="checkbox" checked={bcasApproval} onChange={(e) => setBcasApproval(e.target.checked)} />
+                  BCAS approval obtained for exceeding 30 days (mandatory before issuance)
+                </label>
+              )}
+            </div>
+          )}
+
           <div className="create-foot">
-            <span className="muted" style={{ fontSize: 12 }}>On save: Stop List check, then category checklist auto-loads (Uploaded → Verified before advancing).</span>
-            <button className="btn btn-brand" disabled={!subject.trim() || !!done} onClick={submitPass}>
-              {done ?? <>Raise pass <ArrowRight size={15} /></>}
+            <span className="muted" style={{ fontSize: 12 }}>On save: Stop List check + TAEP cap, then the category checklist auto-loads (Uploaded → Verified before advancing).</span>
+            <button className="btn btn-brand" disabled={blockedSubmit} onClick={submitPass}>
+              {done ?? (stopHit ? <>Blocked</> : <>Raise pass <ArrowRight size={15} /></>)}
             </button>
           </div>
         </section>

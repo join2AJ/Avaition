@@ -56,6 +56,7 @@ interface DataCtx {
   advanceApplication: (appId: string, to: ApplicationStatus, opts?: { note?: string; action?: string }) => void;
   createContract: (c: NewContract) => Contract;
   terminateContract: (contractId: string) => void;
+  renewContract: (contractId: string, newEnd: string, confirmedZones: string[]) => void;
   advanceApproval: (entityId: string) => void;
   applyTrainingHolds: () => number;                       // §13 — auto-deactivate lapsed-training holders' passes
   recordAvsecRefresher: (individualId: string) => void;   // §13 — refresher recorded → reactivate held passes
@@ -199,6 +200,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
     notify("bcas", "contract_terminated", `${ent?.name ?? con.entityId}: contract ${contractId} terminated — ${affected.length} passes moved to surrender.`, "bad");
     if (reapply.length) notify("individual", "reapply_required", `Zone reduction after contract ${contractId} ended: ${Array.from(new Set(reapply)).join(", ")} must re-apply for reduced access.`, "warn");
     if (unaffected.length) notify("individual", "coverage_ok", `Contract ${contractId} ended but zones remain covered by another contract for: ${Array.from(new Set(unaffected)).join(", ")}.`, "ok");
+  };
+
+  // Contract renewal (§7A · §10) — extend the contract, re-confirm the entity's
+  // entitled zones for the new term, and slide every co-terminus pass forward to
+  // the new norm-capped date. A pass zone dropped at re-confirmation is removed
+  // and the holder is told to re-apply for it. Renewal reverses expiry.
+  const renewContract: DataCtx["renewContract"] = (contractId, newEnd, confirmedZones) => {
+    const con = contracts.find((c) => c.id === contractId);
+    if (!con) return;
+    setContracts((x) => x.map((c) => (c.id === contractId ? { ...c, end: newEnd, status: "active" } : c)));
+    setEntities((x) => x.map((e) => (e.id === con.entityId ? { ...e, entitledZones: confirmedZones, contractEnd: newEnd } : e)));
+    const ts = now();
+    const shrunk = new Set<string>();
+    let extended = 0;
+    setApplications((x) => x.map((a) => {
+      if (a.contractId !== contractId || ["surrendered", "rejected", "withdrawn"].includes(a.status)) return a;
+      const { to } = computeValidTo(a.passType, a.validFrom || today(), newEnd);
+      const zones = a.zones.filter((z) => confirmedZones.includes(z));
+      if (zones.length < a.zones.length) shrunk.add(a.subject);
+      extended += 1;
+      return { ...a, zones, validTo: to, stepLog: [...(a.stepLog ?? []), { stage: a.status === "issued" ? "handover" : "intake", at: ts, by: session?.name ?? "system", action: "Contract renewed", note: `Co-terminus validity extended to ${to}; zones re-confirmed (§7A)` }] };
+    }));
+    const ent = entities.find((e) => e.id === con.entityId);
+    log("renew_contract", contractId, `${con.counterparty} renewed till ${newEnd} · ${extended} passes extended · zones re-confirmed ${confirmedZones.join(" ") || "—"}`);
+    notify("entity", "contract_renewed", `Contract ${contractId} (${con.counterparty}) renewed till ${newEnd}. ${extended} pass(es) extended co-terminus; entitled zones re-confirmed (§7A).`, "ok");
+    notify("bcas", "contract_renewed", `${ent?.name ?? con.entityId}: contract ${contractId} renewed till ${newEnd} — zones re-confirmed.`, "ok");
+    if (shrunk.size) notify("individual", "reapply_required", `Zone(s) dropped at renewal of ${contractId}: ${Array.from(shrunk).join(", ")} must re-apply for the removed access.`, "warn");
   };
 
   const advanceApproval: DataCtx["advanceApproval"] = (entityId) => {
@@ -371,7 +399,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, roleZones, roles,
-      createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract,
+      createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,
       stopList, isStopListed, addStopList, removeStopList, taepDaysUsed, screenStopList,
       setEntityZones, setRoleZones, createRole, setPermission, recordSlaJustification, log,

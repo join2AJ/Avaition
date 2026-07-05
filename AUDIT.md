@@ -63,4 +63,8 @@ Status: ☐ open · ☑ fixed.
   contract and AVSEC-training date and raises 30 / 14 / 3-day (and already-expired) intimations into the
   notification bell. Each carries a deterministic bucket-scoped id so reloads never duplicate it; 3-day
   and expired fire red, wider windows amber.
-- ☐ **D3 · S2 — Contract renewal flow.** Re-confirm zones at renewal. *(queued)*
+- ☑ **D3 · S2 — Contract renewal flow added.** A contract (active or lapsed) can be renewed to a new
+  end date with a **mandatory zone re-confirmation** for the new term (§7A). Renewal reverses expiry,
+  re-confirms the entity’s entitled zones, slides every live pass under the contract to the new
+  norm-capped date, drops any zone removed at re-confirmation (holder told to re-apply), and intimates
+  the entity + BCAS. Verified end-to-end.

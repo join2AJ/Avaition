@@ -190,6 +190,7 @@
 .detail-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
 .detail-side { display: flex; flex-direction: column; gap: 10px; }
 .detail-side-stack { display: flex; flex-direction: column; gap: 16px; }
+.row-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .ref-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 
 /* Lifecycle action panel — role-gated forward actions on an application. */

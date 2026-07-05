@@ -1,16 +1,33 @@
 import { useState } from "react";
-import { FileSignature, Plus, Ban, Upload } from "lucide-react";
+import { FileSignature, Plus, Ban, Upload, RefreshCw, Check } from "lucide-react";
 import { useData } from "@/app/data";
+import { ZONES } from "@/domain/zones";
 import { Pill, ClauseBadge } from "@/components/ui";
 
 // Contracts are the backbone: every pass is raised under a contract. When a
 // contract ends/terminates, its passes cascade to surrender and everyone
 // concerned is intimated (§10.3 · §10.7).
 export default function Contracts() {
-  const { contracts, entities, applications, createContract, terminateContract } = useData();
+  const { contracts, entities, applications, createContract, terminateContract, renewContract } = useData();
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState({ entityId: entities[0]?.id ?? "", counterparty: "", type: "Work Order", start: "", end: "", scope: "", copyFileName: "" });
   const set = (k: string, v: string) => setF((x) => ({ ...x, [k]: v }));
+
+  // Renewal state — re-confirming zones for the new term is mandatory (§7A).
+  const [renewId, setRenewId] = useState<string | null>(null);
+  const [renewEnd, setRenewEnd] = useState("");
+  const [renewZones, setRenewZones] = useState<string[]>([]);
+  const openRenew = (cid: string) => {
+    const con = contracts.find((c) => c.id === cid);
+    const ent = entities.find((e) => e.id === con?.entityId);
+    setRenewId(cid); setRenewEnd(""); setRenewZones(ent?.entitledZones ?? []); setAdding(false);
+  };
+  const toggleRenewZone = (z: string) => setRenewZones((s) => (s.includes(z) ? s.filter((x) => x !== z) : [...s, z]));
+  const doRenew = () => {
+    if (!renewId || !renewEnd) return;
+    renewContract(renewId, renewEnd, renewZones);
+    setRenewId(null);
+  };
 
   const entName = (id: string) => entities.find((e) => e.id === id)?.name ?? id;
   const passCount = (cid: string) => applications.filter((a) => a.contractId === cid && a.status !== "surrendered").length;
@@ -55,6 +72,38 @@ export default function Contracts() {
         </section>
       )}
 
+      {renewId && (() => {
+        const con = contracts.find((c) => c.id === renewId);
+        return (
+          <section className="card card-pad create-form">
+            <div className="card-head"><span className="section-title"><RefreshCw size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} /> Renew {renewId} · {con?.counterparty} <ClauseBadge>§7A co-terminus</ClauseBadge></span>
+              <button className="btn btn-ghost mini-btn" onClick={() => setRenewId(null)}>Cancel</button></div>
+            <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, margin: "2px 0 10px" }}>
+              Renewal extends the contract, re-confirms the entity’s entitled zones for the new term, and slides
+              every live pass under it to the new norm-capped date. A zone removed here is dropped from those
+              passes and the holder must re-apply for it.
+            </p>
+            <div className="form-2col">
+              <label className="fld"><span className="fld-l req">New valid till</span><input className="field" type="date" value={renewEnd} onChange={(e) => setRenewEnd(e.target.value)} /></label>
+              <div className="fld"><span className="fld-l">Passes affected</span><div className="valid-to">{applications.filter((a) => a.contractId === renewId && !["surrendered", "rejected", "withdrawn"].includes(a.status)).length} live pass(es) extend co-terminus</div></div>
+            </div>
+            <div className="fld"><span className="fld-l req">Re-confirm entitled zones</span>
+              <div className="zone-pick">
+                {ZONES.map((z) => (
+                  <button key={z.code} className={`zone-opt ${renewZones.includes(z.code) ? "on" : ""} ${z.sra ? "sra" : ""}`} onClick={() => toggleRenewZone(z.code)} title={z.label}>
+                    <span className="mono">{z.code}</span>{renewZones.includes(z.code) && <Check size={11} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="create-foot">
+              <span className="muted" style={{ fontSize: 12 }}>Zones re-confirmed: <b className="mono">{renewZones.join(" ") || "—"}</b></span>
+              <button className="btn btn-brand" disabled={!renewEnd} onClick={doRenew}><RefreshCw size={15} /> Renew &amp; re-confirm</button>
+            </div>
+          </section>
+        );
+      })()}
+
       <section className="card matrix-card">
         <div className="matrix-scroll">
           <table className="sur-table">
@@ -72,10 +121,15 @@ export default function Contracts() {
                   <td>{passCount(c.id)}</td>
                   <td><Pill tone={c.status === "active" ? "green" : c.status === "terminated" ? "red" : "slate"} dot>{c.status}</Pill></td>
                   <td>
-                    {c.status === "active" && (
-                      <button className="btn btn-ghost mini-btn" onClick={() => {
-                        if (confirm(`Terminate ${c.id} (${c.counterparty})? ${passCount(c.id)} passes will be surrendered and all parties intimated.`)) terminateContract(c.id);
-                      }}><Ban size={13} /> Terminate</button>
+                    {c.status !== "terminated" && (
+                      <div className="row-actions">
+                        <button className="btn btn-ghost mini-btn" onClick={() => openRenew(c.id)}><RefreshCw size={13} /> Renew</button>
+                        {c.status === "active" && (
+                          <button className="btn btn-ghost mini-btn" onClick={() => {
+                            if (confirm(`Terminate ${c.id} (${c.counterparty})? ${passCount(c.id)} passes will be surrendered and all parties intimated.`)) terminateContract(c.id);
+                          }}><Ban size={13} /> Terminate</button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>

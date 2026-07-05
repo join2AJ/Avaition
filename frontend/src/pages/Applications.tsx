@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Building2, MapPin, Layers, Filter, X, ChevronRight } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, Layers, Filter, X, ChevronRight, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useSettings, visiblePillars } from "@/app/settings";
 import { useData } from "@/app/data";
@@ -71,6 +71,7 @@ export default function Applications() {
                   <span className="section-title">Governing references</span>
                   <div className="ref-row"><Layers size={14} /> Pillar {current.pillar} · {current.passType}</div>
                   <div className="ref-row"><ClauseBadge>AVSEC Order 02/2022 {current.clauseRef}</ClauseBadge></div>
+                  {current.escort && <div className="ref-row"><ShieldCheck size={14} /> SRA escort: <b>{current.escort}</b> <ClauseBadge>§12B</ClauseBadge></div>}
                   <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, marginTop: 8 }}>
                     Every step above is gated on its clause and SLA. A step cannot clear until its checklist is
                     Uploaded + Verified, and any deficiency routes to the clarification queue before committee.

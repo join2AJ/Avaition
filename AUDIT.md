@@ -28,8 +28,11 @@ Status: ☐ open · ☑ fixed.
   (Current / Refresher-due / Lapsed, sorted worst-first). “Apply training holds” deactivates any live
   AEP whose holder’s training has lapsed and intimates the entity/BCAS; “Record refresher” renews the
   validity and reactivates the held pass. Verified end-to-end.
-- ☐ **A6 · S2 — Escort binding for TAEP/material into SRA (§8.3.4.12 / §12B).** Material can only enter
-  a zone the *named escorting AEP holder* is entitled to — the escort is not captured. *(queued)*
+- ☑ **A6 · S2 — Escort binding for TAEP/material into SRA (§8.3.4.12 · §12B).** Raising a ToT (or a
+  TAEP requesting an SRA zone) now requires naming an escorting AEP holder. The escort list is filtered
+  to holders whose granted zones cover *every* requested SRA zone (and who aren't stop-listed); if none
+  qualifies the pass is hard-blocked ("cannot enter unescorted"). The escort binds to the application,
+  shows on its detail view, and is written to the audit. Verified end-to-end.
 
 ## B. Insights for BCAS & Aerodrome Operator (primary purpose)
 

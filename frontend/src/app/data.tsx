@@ -39,7 +39,7 @@ export interface NewEntity {
 export interface NewIndividual { entityId: string; name: string; jobRole: string; loginAuthorized: boolean; }
 export interface NewApplication {
   pillar: Pillar; entityId: string; subject: string; passType: PassType; zones: string[];
-  jobRole?: string; validFrom: string; contractId?: string;
+  jobRole?: string; validFrom: string; contractId?: string; escort?: string;
 }
 export interface NewContract { entityId: string; counterparty: string; type: string; start: string; end: string; scope: string; copyFileName?: string; }
 
@@ -262,14 +262,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const app: Application = {
       id: nextId(applications, "APP-", 4), pillar: a.pillar, entityId: a.entityId, subject: a.subject,
       contractId: a.contractId,
-      jobRole: a.jobRole, passType: a.passType, zones: a.zones, status: "checklist_pending",
+      jobRole: a.jobRole, passType: a.passType, zones: a.zones, escort: a.escort, status: "checklist_pending",
       createdBy: ROLE_LABEL[session?.role ?? "operator"], createdAt: from, createdAtTs: ts,
       validFrom: from, validTo: to,
       stepLog: [{ stage: "intake", at: ts, by: session?.name }],
       clauseRef: a.pillar === "MATERIAL" ? "§12B" : a.pillar === "VEHICLE" ? "§12A" : "§5",
     };
     setApplications((x) => [app, ...x]);
-    log("create_application", app.id, `${a.pillar} · ${a.passType} · ${a.subject} · valid to ${to} (${norm})`);
+    log("create_application", app.id, `${a.pillar} · ${a.passType} · ${a.subject} · valid to ${to} (${norm})${a.escort ? ` · escort ${a.escort}` : ""}`);
     return app;
   };
 

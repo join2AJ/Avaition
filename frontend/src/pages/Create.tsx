@@ -24,7 +24,7 @@ const MAN_SUBTYPES = ["BAEP (>31 days)", "TAEP (≤30 days)", "One-Day", "Protoc
 const MATERIAL_SUBTYPES = ["One-Day", "One-month", "Quarterly (3 mo)"];
 
 export default function Create() {
-  const { entities, roleZones, contracts, createEntity, createIndividual, createApplication, isStopListed, screenStopList, taepDaysUsed } = useData();
+  const { entities, individuals, roleZones, contracts, applications, createEntity, createIndividual, createApplication, isStopListed, screenStopList, taepDaysUsed } = useData();
   const { session } = useAuth();
   const nav = useNavigate();
   const isAdmin = session?.role === "admin";
@@ -43,6 +43,7 @@ export default function Create() {
     return (roleZones[JOB_ROLES[0]] ?? []).filter((z) => entZones.has(z));
   });
   const [adp, setAdp] = useState("");
+  const [escort, setEscort] = useState("");
   const [validFrom, setValidFrom] = useState(today());
   const [subType, setSubType] = useState("");
   const entityContracts = contracts.filter((c) => c.entityId === entityId && c.status === "active");
@@ -83,12 +84,30 @@ export default function Create() {
 
   const toggleZone = (c: string) => setZones((z) => (z.includes(c) ? z.filter((x) => x !== c) : [...z, c]));
 
+  // §8.3.4.12 / §12B — Escort binding. Material (ToT) and a TAEP holder can only
+  // enter an SRA if a named AEP holder escorts them, and only into zones that
+  // escort is themselves entitled to. Eligible escorts are AEP holders (any
+  // entity) whose granted zones cover every SRA zone requested here.
+  const sraSet = new Set(ZONES.filter((z) => z.sra).map((z) => z.code));
+  const requestedSra = zones.filter((z) => sraSet.has(z));
+  const needsEscort = requestedSra.length > 0 && (pillar === "MATERIAL" || (pillar === "MAN" && passType === "TAEP"));
+  // A registered AEP holder whose granted zones cover every requested SRA zone,
+  // is not stop-listed, and holds no rejected/withdrawn/surrendered-only record.
+  const eligibleEscorts = needsEscort
+    ? individuals.filter((i) =>
+        requestedSra.every((z) => (i.zones ?? []).includes(z)) &&
+        !isStopListed(i.name) &&
+        !applications.some((a) => a.subject === i.name && ["withdrawn", "surrendered"].includes(a.status)))
+    : [];
+  const escortInd = individuals.find((i) => i.name === escort);
+  const escortValid = !needsEscort || (!!escortInd && requestedSra.every((z) => (escortInd.zones ?? []).includes(z)));
+
   // §9 Stop List screen + §8.3.4.3 TAEP 30-day annual cap.
   const stopHit = pillar === "MAN" && subject.trim() ? isStopListed(subject) : undefined;
   const proposedDays = Math.max(1, Math.round((+new Date(validTo.to) - +new Date(validFrom)) / 86400000));
   const taepUsed = pillar === "MAN" && subject.trim() ? taepDaysUsed(subject) : 0;
   const taepOver = passType === "TAEP" && (taepUsed + proposedDays) > 30;
-  const blockedSubmit = !subject.trim() || !!done || !!stopHit || (taepOver && !bcasApproval);
+  const blockedSubmit = !subject.trim() || !!done || !!stopHit || (taepOver && !bcasApproval) || !escortValid;
 
   const submitPass = () => {
     if (stopHit) { screenStopList(subject); return; }
@@ -96,6 +115,7 @@ export default function Create() {
     const app = createApplication({
       pillar, entityId, subject: subj, passType, zones,
       jobRole: pillar === "MAN" ? jobRole : undefined, validFrom, contractId,
+      escort: needsEscort ? escort : undefined,
     });
     setDone(`Raised ${app.id}`);
     setTimeout(() => nav(`/app/applications/${app.id}`), 700);
@@ -204,6 +224,27 @@ export default function Create() {
               ))}
             </div>
           </div>
+
+          {needsEscort && (
+            <div className="fld">
+              <span className="fld-l req">Escorting AEP holder <ClauseBadge>SRA escort · §8.3.4.12 · §12B</ClauseBadge></span>
+              <select className="field" value={escort} onChange={(e) => setEscort(e.target.value)}>
+                <option value="">— select the AEP holder who will escort into {requestedSra.join(", ")} —</option>
+                {eligibleEscorts.map((i) => (
+                  <option key={i.id} value={i.name}>{i.name} · {entities.find((e) => e.id === i.entityId)?.name ?? i.entityId} · zones {(i.zones ?? []).join(" ")}</option>
+                ))}
+              </select>
+              {eligibleEscorts.length === 0 ? (
+                <span className="fld-hint" style={{ color: "var(--red-700)" }}>
+                  No AEP holder is entitled to {requestedSra.join(", ")} — the material/TAEP cannot enter these SRA zone(s) unescorted (§12B). Drop the SRA zone or register an entitled escort.
+                </span>
+              ) : escort ? (
+                <span className="fld-hint">Material/TAEP may enter only zones {escortInd?.name} holds: <b className="mono">{(escortInd?.zones ?? []).join(" ")}</b>. Escort accompanies at all times in the SRA.</span>
+              ) : (
+                <span className="fld-hint">A named escort is mandatory to carry material / take a temporary holder into an SRA.</span>
+              )}
+            </div>
+          )}
 
           {stopHit && (
             <div className="stop-hit">

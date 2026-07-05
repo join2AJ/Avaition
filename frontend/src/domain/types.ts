@@ -133,6 +133,7 @@ export interface Application {
   jobRole?: string; // MAN — drives zone-need
   passType: PassType;
   zones: string[]; // requested zone codes
+  escort?: string; // named AEP holder escorting material/TAEP into an SRA (§8.3.4.12 · §12B)
   status: ApplicationStatus;
   createdBy: string;
   createdAt: string;   // date only

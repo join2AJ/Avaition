@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FileStack, CalendarClock, Building2, ShieldAlert,
-  IdCard, Users, Map, ScrollText, type LucideIcon,
+  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/domain/types";
 
@@ -22,13 +22,16 @@ const ALL: Record<string, NavItem> = {
   penalties: { to: "/app/penalties", label: "Surrenders · penalties", icon: ShieldAlert },
   profile: { to: "/app/profile", label: "Entity profile", icon: IdCard },
   users: { to: "/app/users", label: "Users & roles", icon: Users },
+  access: { to: "/app/access", label: "Access control", icon: SlidersHorizontal },
   audit: { to: "/app/audit", label: "Audit log", icon: ScrollText },
+  verify: { to: "/app/verify", label: "Verify pass", icon: ScanSearch },
 };
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.applications, ALL.committees, ALL.entities, ALL.zones, ALL.penalties, ALL.users, ALL.audit],
+  admin: [ALL.dashboard, ALL.applications, ALL.committees, ALL.entities, ALL.zones, ALL.penalties, ALL.users, ALL.access, ALL.audit],
   bcas: [ALL.dashboard, ALL.applications, ALL.zones, ALL.penalties, ALL.audit],
   operator: [ALL.dashboard, ALL.applications, ALL.committees, ALL.entities, ALL.penalties],
+  cisf: [ALL.verify],
   entity: [ALL.dashboard, ALL.applications, ALL.zones, ALL.profile],
   others: [ALL.dashboard, ALL.applications, ALL.profile],
   individual: [ALL.dashboard, ALL.applications],

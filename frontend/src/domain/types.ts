@@ -14,7 +14,7 @@ export const PILLARS: { key: Pillar; roman: string; label: string; pass: string;
   { key: "VEHICLE", roman: "III", label: "Vehicle", pass: "VEP", clause: "§12A" },
 ];
 
-export type Role = "admin" | "operator" | "bcas" | "entity" | "others" | "individual";
+export type Role = "admin" | "operator" | "bcas" | "cisf" | "entity" | "others" | "individual";
 
 export interface RoleMeta {
   key: Role;

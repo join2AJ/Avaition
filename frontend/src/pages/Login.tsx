@@ -18,7 +18,7 @@ export default function Login() {
       name: name.trim() || defaultName(role),
       entityId: role === "entity" || role === "individual" ? "ENT-01" : undefined,
     });
-    nav("/app");
+    nav(role === "cisf" ? "/app/verify" : "/app");
   };
 
   return (
@@ -77,6 +77,6 @@ export default function Login() {
 function defaultName(role: Role): string {
   return {
     admin: "Portal Administrator", bcas: "BCAS Officer", operator: "Pass Section Staff",
-    entity: "GHA-Delta Ground Services", others: "Contractor User", individual: "R. Sharma",
+    cisf: "CISF Gate Officer", entity: "GHA-Delta Ground Services", others: "Contractor User", individual: "R. Sharma",
   }[role];
 }

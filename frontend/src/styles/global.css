@@ -73,7 +73,7 @@
   --violet: var(--violet-500); --violet-soft: var(--violet-100);
   --blue-soft: var(--blue-100); --amber-soft: var(--amber-100); --teal-soft: var(--cyan-100); --slate-soft: var(--cloud-150);
   --role-admin: var(--navy-500); --role-bcas: var(--red-500); --role-operator: var(--cyan-500);
-  --role-entity: var(--green-700); --role-others: var(--violet-500);
+  --role-entity: var(--green-700); --role-others: var(--violet-500); --role-cisf: #0d9488;
   --radius: var(--radius-lg); --sidebar-w: var(--nav-width);
 }
 

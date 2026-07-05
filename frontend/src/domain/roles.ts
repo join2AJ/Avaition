@@ -25,6 +25,13 @@ export const ROLES: RoleMeta[] = [
     blurb: "Verifies checklists, runs clarifications, schedules committees, prints & issues cards.",
   },
   {
+    key: "cisf",
+    title: "CISF — Gate Verification",
+    tag: "VERIFY ONLY",
+    accent: "var(--role-cisf)",
+    blurb: "Search a pass number (AEP · protocol · ToT · VEP/ADP) to verify details against the physical card at the gate.",
+  },
+  {
     key: "entity",
     title: "Entity (> 15 persons)",
     tag: "SELF-SERVICE",
@@ -44,6 +51,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   admin: "Admin · Operator + BCAS",
   bcas: "BCAS · Oversight",
   operator: "Pass Section · Operator",
+  cisf: "CISF · Gate Verify",
   entity: "Entity",
   others: "Others",
   individual: "Individual · Self-check",

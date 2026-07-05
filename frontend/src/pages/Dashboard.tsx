@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FileStack, Clock3, MessageSquareWarning, CalendarClock, TimerReset, Ban, AlertTriangle, Radio } from "lucide-react";
 import { useAuth } from "@/app/auth";
+import { useSettings, visiblePillars } from "@/app/settings";
 import { ROLE_LABEL } from "@/domain/roles";
 import type { Application, Entity } from "@/domain/types";
 import { api, expiringWithin, pillarMix, stateCounts } from "@/lib/api";
@@ -10,6 +11,7 @@ import ApplicationRegister from "@/components/ApplicationRegister";
 
 export default function Dashboard() {
   const { session } = useAuth();
+  const { policy } = useSettings();
   const [apps, setApps] = useState<Application[]>([]);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
@@ -19,14 +21,17 @@ export default function Dashboard() {
     api.listEntities().then(setEntities);
   }, []);
 
-  // Scope to the signed-in entity for entity/individual roles.
+  // Scope by role: entity/individual/others see only their own entity; BCAS is
+  // limited to the pass pillars Admin has granted (default Man + Vehicle).
   const scoped = useMemo(() => {
     if (!session) return [];
+    const allowed = visiblePillars(session.role, policy);
+    let list = apps.filter((a) => allowed.includes(a.pillar));
     if (session.role === "entity" || session.role === "individual" || session.role === "others") {
-      return apps.filter((a) => a.entityId === session.entityId);
+      list = list.filter((a) => a.entityId === session.entityId);
     }
-    return apps;
-  }, [apps, session]);
+    return list;
+  }, [apps, session, policy]);
 
   const states = stateCounts(scoped);
   const mix = pillarMix(scoped);

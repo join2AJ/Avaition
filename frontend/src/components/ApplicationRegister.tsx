@@ -6,9 +6,9 @@ import { entityName } from "@/lib/api";
 import { Pill, PillarBadge, ZoneChips } from "./ui";
 
 export default function ApplicationRegister({
-  apps, entities, limit,
+  apps, entities, limit, linkBase = "/app/applications",
 }: {
-  apps: Application[]; entities: Entity[]; limit?: number;
+  apps: Application[]; entities: Entity[]; limit?: number; linkBase?: string;
 }) {
   const rows = limit ? apps.slice(0, limit) : apps;
   return (
@@ -16,7 +16,7 @@ export default function ApplicationRegister({
       {rows.map((a) => {
         const st = STATUS_META[a.status];
         return (
-          <Link to={`/app/applications`} key={a.id} className="reg-row">
+          <Link to={`${linkBase}/${a.id}`} key={a.id} className="reg-row">
             <span className="reg-id mono">{a.id}</span>
             <PillarBadge pillar={a.pillar} />
             <span className="reg-subject">{a.subject}</span>

@@ -32,6 +32,9 @@ export type ApplicationStatus =
   | "approved"
   | "rejected"
   | "issued"
+  | "parked"        // §10.6 — 60-day non-use suspension (reversible within norms)
+  | "deactivated"   // compliance hold, e.g. AVSEC-training lapse (§10 · §13) — reversible
+  | "withdrawn"     // §11 — permanent cancellation (adverse BGC / disciplinary)
   | "surrendered";
 
 export type EntityStatus = "active" | "suspended" | "archived";

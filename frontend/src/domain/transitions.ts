@@ -35,7 +35,19 @@ export const TRANSITIONS: Partial<Record<ApplicationStatus, Transition[]>> = {
     { to: "issued", label: "Issue & print pass", roles: ["operator", "admin"], tone: "brand", clause: "§15" },
   ],
   issued: [
+    { to: "parked", label: "Park (non-use)", roles: ["operator", "admin"], tone: "amber", needsNote: true, clause: "§10.6" },
+    { to: "deactivated", label: "Deactivate (compliance hold)", roles: ["operator", "admin", "bcas"], tone: "amber", needsNote: true, clause: "§10 · §13" },
+    { to: "withdrawn", label: "Withdraw (adverse BGC / cancel)", roles: ["bcas", "admin"], tone: "red", needsNote: true, clause: "§11" },
     { to: "surrendered", label: "Surrender pass", roles: ["operator", "admin", "entity", "others"], tone: "ghost", needsNote: true, clause: "§10.7" },
+  ],
+  parked: [
+    { to: "issued", label: "Un-park & reinstate", roles: ["operator", "admin"], tone: "brand", clause: "§10.6" },
+    { to: "withdrawn", label: "Withdraw (cancel)", roles: ["bcas", "admin"], tone: "red", needsNote: true, clause: "§11" },
+    { to: "surrendered", label: "Surrender pass", roles: ["operator", "admin", "entity", "others"], tone: "ghost", needsNote: true, clause: "§10.7" },
+  ],
+  deactivated: [
+    { to: "issued", label: "Reactivate", roles: ["operator", "admin", "bcas"], tone: "brand", clause: "§10 · §13" },
+    { to: "withdrawn", label: "Withdraw (cancel)", roles: ["bcas", "admin"], tone: "red", needsNote: true, clause: "§11" },
   ],
 };
 

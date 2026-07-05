@@ -101,7 +101,7 @@ function ApplicationActions({ app, role }: { app: Application; role: Role }) {
   };
 
   if (STATUS_META[app.status] && actions.length === 0) {
-    const terminal = ["issued", "surrendered", "rejected"].includes(app.status);
+    const terminal = ["surrendered", "rejected", "withdrawn"].includes(app.status);
     return (
       <div className="card card-pad detail-side">
         <span className="section-title">Actions</span>

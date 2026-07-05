@@ -16,8 +16,13 @@ Status: ☐ open · ☑ fixed.
   MAN pass; a match hard-blocks issuance, logs a Stop-List-hit and raises an urgent notification.
 - ☑ **A3 · S1 — TAEP 30-day annual cap (§8.3.4.3).** Running per-individual TAEP-day counter on Create;
   exceeding 30 days blocks until "BCAS approval obtained" is confirmed.
-- ☐ **A4 · S2 — Lifecycle states incomplete (§7B–D).** No Parked (60-day non-use), Deactivated, or
-  Withdrawn states; no adverse-BGC cancellation. *(queued)*
+- ☑ **A4 · S2 — Lifecycle states completed (§7B–D · §10.6 · §11).** Added **Parked** (60-day non-use,
+  reversible via Un-park), **Deactivated** (compliance hold, e.g. AVSEC-training lapse, reversible via
+  Reactivate) and **Withdrawn** (permanent cancellation — adverse BGC / disciplinary, §11) states,
+  wired into the transition machine (role-gated: Operator parks/reactivates, BCAS withdraws). The gate
+  Verify screen now refuses any pass not in `issued`/`approved` ("Not currently issued — Withdrawn").
+  Compliance surfaces dedicated **Parked/deactivated** and **Withdrawn** tiles, keeping the SLA metric
+  pure to in-flight processing.
 - ☐ **A5 · S2 — AVSEC-training expiry → auto-park (§10).** Not modelled. *(queued)*
 - ☐ **A6 · S2 — Escort binding for TAEP/material into SRA (§8.3.4.12 / §12B).** Material can only enter
   a zone the *named escorting AEP holder* is entitled to — the escort is not captured. *(queued)*

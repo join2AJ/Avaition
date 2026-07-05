@@ -1,7 +1,6 @@
 import { useMemo } from "react";
-import { ShieldCheck, ShieldAlert, TimerReset, Ban, Gauge } from "lucide-react";
+import { ShieldCheck, ShieldAlert, TimerReset, Ban, Gauge, PauseCircle } from "lucide-react";
 import { useData } from "@/app/data";
-import { slaHealth } from "@/domain/sla";
 import { expiringWithin } from "@/lib/api";
 import { Pill } from "@/components/ui";
 
@@ -30,8 +29,12 @@ export default function Compliance() {
   const exp30 = expiringWithin(applications, 30).length;
   const exp14 = expiringWithin(applications, 14).length;
   const exp3 = expiringWithin(applications, 3).length;
-  const breached = applications.filter((a) => slaHealth(a.status) === "breached").length;
-  const atRisk = applications.filter((a) => slaHealth(a.status) === "at_risk").length;
+  // SLA is the processing-turnaround metric — only in-flight applications count.
+  // Post-issue lifecycle holds (parked / deactivated) and cancellations
+  // (withdrawn) are governance states, surfaced on their own tiles.
+  const atRisk = applications.filter((a) => a.status === "clarification").length;
+  const held = applications.filter((a) => a.status === "parked" || a.status === "deactivated").length;
+  const withdrawn = applications.filter((a) => a.status === "withdrawn").length;
   const overdueSurrender = applications.filter((a) => a.status === "surrendered").length;
   const terminatedContracts = contracts.filter((c) => c.status === "terminated").length;
 
@@ -64,13 +67,17 @@ export default function Compliance() {
           <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--amber-500)" }}><TimerReset size={18} /></span><span className="kpi-value">{exp30}</span></div>
           <div className="kpi-label">Passes expiring ≤ 30d</div>
         </div>
+        <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--amber-500)" }}>
+          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--amber-500)" }}><PauseCircle size={18} /></span><span className="kpi-value">{held}</span></div>
+          <div className="kpi-label">Parked / deactivated</div>
+        </div>
         <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--red-500)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--red-500)" }}><ShieldAlert size={18} /></span><span className="kpi-value">{breached}</span></div>
-          <div className="kpi-label">SLA breached</div>
+          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--red-500)" }}><Ban size={18} /></span><span className="kpi-value">{withdrawn}</span></div>
+          <div className="kpi-label">Withdrawn (§11)</div>
         </div>
         <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--amber-500)" }}>
           <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--amber-500)" }}><ShieldAlert size={18} /></span><span className="kpi-value">{atRisk}</span></div>
-          <div className="kpi-label">SLA at risk</div>
+          <div className="kpi-label">SLA at risk (clarification)</div>
         </div>
         <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--ink-400)" }}>
           <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--ink-400)" }}><Ban size={18} /></span><span className="kpi-value">{overdueSurrender}</span></div>

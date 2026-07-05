@@ -280,19 +280,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const stageMap: Record<ApplicationStatus, string> = {
       draft: "intake", checklist_pending: "checklist", clarification: "checklist",
       committee_scheduled: "committee", approved: "issue", issued: "handover",
-      rejected: "committee", surrendered: "closed",
+      rejected: "committee", parked: "handover", deactivated: "handover",
+      withdrawn: "closed", surrendered: "closed",
     };
     const ts = now();
     setApplications((x) => x.map((a) => (a.id === appId
       ? { ...a, status: to, stepLog: [...(a.stepLog ?? []), { stage: stageMap[to] ?? to, at: ts, by: session?.name, note: opts?.note, action: opts?.action }] }
       : a)));
-    const tone: AuditEntry["tone"] = to === "rejected" ? "bad" : to === "clarification" || to === "surrendered" ? "warn" : "ok";
+    const tone: AuditEntry["tone"] = to === "rejected" || to === "withdrawn" ? "bad"
+      : to === "clarification" || to === "surrendered" || to === "parked" || to === "deactivated" ? "warn" : "ok";
     log("advance_application", appId, `${app.subject}: ${app.status} → ${to}${opts?.note ? ` · ${opts.note}` : ""}`, tone);
-    if (to === "issued") notify("entity", "pass_issued", `${app.subject}: ${app.passType} pass approved & issued — ready for print / handover (${appId}).`, "ok");
+    if (to === "issued") notify("entity", "pass_issued", `${app.subject}: ${app.passType} pass ${app.status === "checklist_pending" || app.status === "approved" ? "approved & issued — ready for print / handover" : "reinstated"} (${appId}).`, "ok");
     else if (to === "rejected") notify("entity", "pass_rejected", `${app.subject}: application ${appId} rejected${opts?.note ? ` — ${opts.note}` : ""}.`, "bad");
     else if (to === "clarification") notify("entity", "clarification", `${app.subject}: clarification required on ${appId}${opts?.note ? ` — ${opts.note}` : ""}.`, "warn");
     else if (to === "surrendered") notify("bcas", "pass_surrendered", `${app.subject}: pass ${appId} surrendered${opts?.note ? ` — ${opts.note}` : ""} (§10.7).`, "warn");
     else if (to === "approved") notify("operator", "pass_approved", `${app.subject}: ${appId} approved at committee — proceed to issue (§15).`, "ok");
+    else if (to === "parked") notify("entity", "pass_parked", `${app.subject}: pass ${appId} parked for non-use${opts?.note ? ` — ${opts.note}` : ""}. Un-park within norms or it lapses (§10.6).`, "warn");
+    else if (to === "deactivated") notify("entity", "pass_deactivated", `${app.subject}: pass ${appId} deactivated (compliance hold)${opts?.note ? ` — ${opts.note}` : ""}. Clear the deficiency to reactivate (§10 · §13).`, "warn");
+    else if (to === "withdrawn") { notify("entity", "pass_withdrawn", `${app.subject}: pass ${appId} WITHDRAWN${opts?.note ? ` — ${opts.note}` : ""}. Surrender the card immediately (§11).`, "bad"); notify("bcas", "pass_withdrawn", `${app.subject}: ${appId} withdrawn (§11)${opts?.note ? ` — ${opts.note}` : ""}.`, "bad"); }
   };
 
   return (

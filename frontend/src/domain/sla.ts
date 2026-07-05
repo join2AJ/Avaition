@@ -102,6 +102,9 @@ export function reachedStage(status: string): Stage {
     committee_scheduled: "committee",
     approved: "issue",
     issued: "closed",
+    parked: "closed",
+    deactivated: "closed",
+    withdrawn: "closed",
     rejected: "committee",
     surrendered: "closed",
   };
@@ -122,8 +125,8 @@ export function stepState(step: LifecycleStep, status: string): StepState {
 
 /** Overall SLA health for the application (demo heuristic; real clock is server-side). */
 export function slaHealth(status: string): SlaHealth {
-  if (status === "clarification") return "at_risk";
-  if (status === "rejected" || status === "surrendered") return "breached";
+  if (status === "clarification" || status === "parked" || status === "deactivated") return "at_risk";
+  if (status === "rejected" || status === "surrendered" || status === "withdrawn") return "breached";
   return "on_track";
 }
 

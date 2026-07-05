@@ -105,4 +105,8 @@ export const APPLICATIONS: Application[] = [
   { id: "APP-2258", pillar: "VEHICLE", entityId: "ENT-05", subject: "MH-04-CV-2231 · cargo van", passType: "VEP", zones: ["Cd"], status: "issued", createdBy: "Pass Section", createdAt: "2026-06-28", expiryDate: "2026-07-22", clauseRef: "§12A" },
   { id: "APP-2259", pillar: "MAN", entityId: "ENT-05", subject: "A. Reddy", passType: "TAEP", zones: ["Cd", "Csd"], status: "issued", createdBy: "Pass Section", createdAt: "2026-06-25", expiryDate: "2026-07-19", clauseRef: "§5" },
   { id: "APP-2260", pillar: "MAN", entityId: "ENT-03", subject: "N. Gupta", passType: "TAEP", zones: ["T"], status: "rejected", createdBy: "Pass Section", createdAt: "2026-06-30", clauseRef: "§5" },
+  { id: "APP-2261", pillar: "MAN", entityId: "ENT-01", subject: "K. Menon", passType: "BAEP", zones: ["A", "T"], status: "parked", createdBy: "Pass Section", createdAt: "2026-04-20", expiryDate: "2027-04-19", clauseRef: "§5",
+    stepLog: [{ stage: "handover", at: "2026-04-20 10:15", by: "Pass Section Staff", action: "Issue & print pass" }, { stage: "handover", at: "2026-06-22 09:40", by: "Pass Section Staff", action: "Park (non-use)", note: "No swipe for 60 days — parked pending re-confirmation (§10.6)" }] },
+  { id: "APP-2262", pillar: "MAN", entityId: "ENT-04", subject: "B. Kulkarni", passType: "BAEP", zones: ["P", "T"], status: "withdrawn", createdBy: "Pass Section", createdAt: "2026-03-10", clauseRef: "§5",
+    stepLog: [{ stage: "handover", at: "2026-03-10 11:00", by: "Pass Section Staff", action: "Issue & print pass" }, { stage: "closed", at: "2026-06-28 16:20", by: "BCAS Officer", action: "Withdraw (adverse BGC / cancel)", note: "Adverse police verification received — pass withdrawn (§11)" }] },
 ];

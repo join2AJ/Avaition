@@ -8,6 +8,9 @@ export const STATUS_META: Record<ApplicationStatus, { label: string; tone: strin
   approved: { label: "Approved", tone: "green" },
   rejected: { label: "Rejected", tone: "red" },
   issued: { label: "Issued", tone: "ink" },
+  parked: { label: "Parked", tone: "amber" },
+  deactivated: { label: "Deactivated", tone: "amber" },
+  withdrawn: { label: "Withdrawn", tone: "red" },
   surrendered: { label: "Surrendered", tone: "slate" },
 };
 
@@ -18,6 +21,9 @@ export const STATE_ORDER: ApplicationStatus[] = [
   "committee_scheduled",
   "approved",
   "issued",
+  "parked",
+  "deactivated",
+  "withdrawn",
   "rejected",
 ];
 

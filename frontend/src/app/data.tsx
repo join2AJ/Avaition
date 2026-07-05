@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Application, Entity, Individual, Pillar, PassType } from "@/domain/types";
 import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, type AuditEntry } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
+import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
 
 // Persist the working set for the session so created records survive reloads.
 function load<T>(key: string, fallback: T): T {
@@ -32,13 +33,20 @@ export interface NewEntity { name: string; category: string; strength: number; p
 export interface NewIndividual { entityId: string; name: string; jobRole: string; loginAuthorized: boolean; }
 export interface NewApplication {
   pillar: Pillar; entityId: string; subject: string; passType: PassType; zones: string[];
+  jobRole?: string; validFrom: string;
 }
+
+export type RoleZoneMatrix = Record<string, string[]>;
 
 interface DataCtx {
   entities: Entity[]; individuals: Individual[]; applications: Application[]; audit: AuditEntry[];
+  roleZones: RoleZoneMatrix;
   createEntity: (e: NewEntity) => Entity;
   createIndividual: (i: NewIndividual) => Individual;
   createApplication: (a: NewApplication) => Application;
+  setEntityZones: (entityId: string, zones: string[]) => void;   // BCAS / Admin edit
+  setRoleZones: (role: string, zones: string[]) => void;         // BCAS / Admin edit
+  recordSlaJustification: (appId: string, note: string) => void;
   log: (action: string, object: string, detail: string, tone?: AuditEntry["tone"]) => void;
 }
 
@@ -50,16 +58,45 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [individuals, setIndividuals] = useState<Individual[]>(() => load("aep-individuals", INDIVIDUALS));
   const [applications, setApplications] = useState<Application[]>(() => load("aep-applications", APPLICATIONS));
   const [audit, setAudit] = useState<AuditEntry[]>(() => load("aep-audit", AUDIT));
+  const [roleZones, setRoleZones_] = useState<RoleZoneMatrix>(() => load("aep-rolezones", ROLE_ZONES));
 
   useEffect(() => { sessionStorage.setItem("aep-entities", JSON.stringify(entities)); }, [entities]);
   useEffect(() => { sessionStorage.setItem("aep-individuals", JSON.stringify(individuals)); }, [individuals]);
   useEffect(() => { sessionStorage.setItem("aep-applications", JSON.stringify(applications)); }, [applications]);
   useEffect(() => { sessionStorage.setItem("aep-audit", JSON.stringify(audit)); }, [audit]);
+  useEffect(() => { sessionStorage.setItem("aep-rolezones", JSON.stringify(roleZones)); }, [roleZones]);
 
   const log: DataCtx["log"] = (action, object, detail, tone = "ok") => {
     const actor = session?.name ?? "system";
     const role = session?.role ?? "system";
     setAudit((a) => [{ ts: now(), actor, role, action, object, detail, tone }, ...a]);
+  };
+
+  // Login / logout audit — records session start and end for every login.
+  const prev = useRef<string | null>(null);
+  useEffect(() => {
+    const key = session ? `${session.role}:${session.name}` : null;
+    if (key && key !== prev.current) {
+      setAudit((a) => [{ ts: now(), actor: session!.name, role: session!.role, action: "login", object: "session", detail: `Signed in as ${ROLE_LABEL[session!.role]}`, tone: "ok" }, ...a]);
+    } else if (!key && prev.current) {
+      const [role, name] = prev.current.split(":");
+      setAudit((a) => [{ ts: now(), actor: name, role, action: "logout", object: "session", detail: "Signed out", tone: "ok" }, ...a]);
+    }
+    prev.current = key;
+  }, [session]);
+
+  const setEntityZones: DataCtx["setEntityZones"] = (entityId, zones) => {
+    setEntities((x) => x.map((e) => (e.id === entityId ? { ...e, entitledZones: zones } : e)));
+    log("edit_entity_zones", entityId, `Entitled zones set to ${zones.join(" ") || "—"}`);
+  };
+  const setRoleZones: DataCtx["setRoleZones"] = (role, zones) => {
+    setRoleZones_((m) => ({ ...m, [role]: zones }));
+    log("edit_role_zones", role, `Role zone-need set to ${zones.join(" ") || "—"}`);
+  };
+  const recordSlaJustification: DataCtx["recordSlaJustification"] = (appId, note) => {
+    setApplications((x) => x.map((a) => (a.id === appId
+      ? { ...a, stepLog: [...(a.stepLog ?? []), { stage: a.status, at: now(), by: session?.name, slaNote: note }] } : a)));
+    log("sla_justification", appId, `SLA breach justified: ${note}`, "warn");
   };
 
   const createEntity: DataCtx["createEntity"] = (e) => {
@@ -84,19 +121,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const createApplication: DataCtx["createApplication"] = (a) => {
+    const from = a.validFrom || today();
+    const { to, norm } = computeValidTo(a.passType, from);
+    const ts = now();
     const app: Application = {
       id: nextId(applications, "APP-", 4), pillar: a.pillar, entityId: a.entityId, subject: a.subject,
-      passType: a.passType, zones: a.zones, status: "checklist_pending",
-      createdBy: ROLE_LABEL[session?.role ?? "operator"], createdAt: now().slice(0, 10),
+      jobRole: a.jobRole, passType: a.passType, zones: a.zones, status: "checklist_pending",
+      createdBy: ROLE_LABEL[session?.role ?? "operator"], createdAt: from, createdAtTs: ts,
+      validFrom: from, validTo: to,
+      stepLog: [{ stage: "intake", at: ts, by: session?.name }],
       clauseRef: a.pillar === "MATERIAL" ? "§12B" : a.pillar === "VEHICLE" ? "§12A" : "§5",
     };
     setApplications((x) => [app, ...x]);
-    log("create_application", app.id, `${a.pillar} · ${a.passType} · ${a.subject}`);
+    log("create_application", app.id, `${a.pillar} · ${a.passType} · ${a.subject} · valid to ${to} (${norm})`);
     return app;
   };
 
   return (
-    <Ctx.Provider value={{ entities, individuals, applications, audit, createEntity, createIndividual, createApplication, log }}>
+    <Ctx.Provider value={{
+      entities, individuals, applications, audit, roleZones,
+      createEntity, createIndividual, createApplication,
+      setEntityZones, setRoleZones, recordSlaJustification, log,
+    }}>
       {children}
     </Ctx.Provider>
   );

@@ -7,6 +7,7 @@ import Applications from "./pages/Applications";
 import Create from "./pages/Create";
 import Verify from "./pages/Verify";
 import AccessControl from "./pages/AccessControl";
+import ZoneAccess from "./pages/ZoneAccess";
 import Committees from "./pages/Committees";
 import Zones from "./pages/Zones";
 import EntityOnboarding from "./pages/EntityOnboarding";
@@ -38,6 +39,7 @@ export default function App() {
                 <Route path="applications/:id" element={<Applications />} />
                 <Route path="verify" element={<Verify />} />
                 <Route path="access" element={<AccessControl />} />
+                <Route path="zone-access" element={<ZoneAccess />} />
                 <Route path="committees" element={<Committees />} />
                 <Route path="entities" element={<EntityOnboarding />} />
                 <Route path="zones" element={<Zones />} />

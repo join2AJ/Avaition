@@ -37,7 +37,7 @@ export type ApplicationStatus =
 export type EntityStatus = "active" | "suspended" | "archived";
 
 /** Pass types vary by pillar. */
-export type PassType = "BAEP" | "TAEP" | "VAT" | "Permanent" | "ToT" | "VEP";
+export type PassType = "BAEP" | "TAEP" | "VAT" | "Permanent" | "ToT" | "VEP" | "VAP" | "ADP";
 
 export interface GuidelineClause {
   order_no: string;
@@ -66,17 +66,29 @@ export interface Individual {
   hasLogin: boolean; // entity may authorize a self-check login
 }
 
+export interface StepLog {
+  stage: string;
+  at: string;        // timestamp the step was completed / entered
+  by?: string;
+  slaNote?: string;  // mandatory justification recorded when the step's SLA was breached
+}
+
 /** Polymorphic subject of an application — the shared Entity is always the sponsor. */
 export interface Application {
   id: string; // APP-2216
   pillar: Pillar;
   entityId: string;
   subject: string; // person name (MAN) / item (MATERIAL) / vehicle (VEHICLE)
+  jobRole?: string; // MAN — drives zone-need
   passType: PassType;
   zones: string[]; // requested zone codes
   status: ApplicationStatus;
   createdBy: string;
-  createdAt: string;
+  createdAt: string;   // date only
+  createdAtTs?: string; // date + time the pass was raised (SLA clock start)
+  validFrom?: string;
+  validTo?: string;     // "to" date, computed per norms
+  stepLog?: StepLog[];  // timestamped trail of steps taken
   expiryDate?: string;
   clauseRef: string;
 }

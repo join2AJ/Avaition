@@ -20,6 +20,7 @@ const ALL: Record<string, NavItem> = {
   committees: { to: "/app/committees", label: "Committee agenda", icon: CalendarClock },
   entities: { to: "/app/entities", label: "Entity onboarding", icon: Building2 },
   zones: { to: "/app/zones", label: "Zones & escalation", icon: Map },
+  zoneaccess: { to: "/app/zone-access", label: "Zone access DB", icon: Map },
   penalties: { to: "/app/penalties", label: "Surrenders · penalties", icon: ShieldAlert },
   profile: { to: "/app/profile", label: "Entity profile", icon: IdCard },
   users: { to: "/app/users", label: "Users & roles", icon: Users },
@@ -29,8 +30,8 @@ const ALL: Record<string, NavItem> = {
 };
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.zones, ALL.penalties, ALL.users, ALL.access, ALL.audit],
-  bcas: [ALL.dashboard, ALL.applications, ALL.zones, ALL.penalties, ALL.audit],
+  admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.users, ALL.access, ALL.audit],
+  bcas: [ALL.dashboard, ALL.applications, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.audit],
   operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.penalties],
   cisf: [ALL.verify],
   entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.zones, ALL.profile],

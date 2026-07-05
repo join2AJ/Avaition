@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, UserPlus, Plane, Wrench, Truck, Check, ArrowRight } from "lucide-react";
+import { Building2, UserPlus, Plane, Wrench, Truck, Check, ArrowRight, CalendarClock } from "lucide-react";
 import { useData } from "@/app/data";
+import { useAuth } from "@/app/auth";
 import { PILLARS, type Pillar, type PassType } from "@/domain/types";
 import { ZONES } from "@/domain/zones";
+import { JOB_ROLES, computeValidTo, today } from "@/domain/entitlements";
 import { ClauseBadge } from "@/components/ui";
 
 type Tab = "pass" | "entity" | "individual";
@@ -12,12 +14,14 @@ const PILLAR_ICON = { MAN: Plane, MATERIAL: Wrench, VEHICLE: Truck };
 const PASS_TYPES: Record<Pillar, PassType[]> = {
   MAN: ["BAEP", "TAEP", "VAT", "Permanent"],
   MATERIAL: ["ToT"],
-  VEHICLE: ["VEP"],
+  VEHICLE: ["VEP", "VAP", "ADP"],
 };
 
 export default function Create() {
-  const { entities, createEntity, createIndividual, createApplication } = useData();
+  const { entities, roleZones, createEntity, createIndividual, createApplication } = useData();
+  const { session } = useAuth();
   const nav = useNavigate();
+  const isAdmin = session?.role === "admin";
   const [tab, setTab] = useState<Tab>("pass");
   const [done, setDone] = useState<string | null>(null);
 
@@ -25,9 +29,29 @@ export default function Create() {
   const [pillar, setPillar] = useState<Pillar>("MAN");
   const [entityId, setEntityId] = useState(entities[0]?.id ?? "");
   const [subject, setSubject] = useState("");
+  const [jobRole, setJobRole] = useState(JOB_ROLES[0]);
   const [passType, setPassType] = useState<PassType>("BAEP");
-  const [zones, setZones] = useState<string[]>([]);
+  const [zones, setZones] = useState<string[]>(() => {
+    const ent = entities.find((e) => e.id === (entities[0]?.id));
+    const base = new Set(ent?.entitledZones ?? []);
+    (roleZones[JOB_ROLES[0]] ?? []).forEach((z) => base.add(z));
+    return Array.from(base);
+  });
   const [adp, setAdp] = useState("");
+  const [validFrom, setValidFrom] = useState(today());
+
+  // Auto-give zones from the entity's entitled set ∪ the job-role need.
+  const autofillZones = (eId: string, role: string, p: Pillar) => {
+    const ent = entities.find((e) => e.id === eId);
+    const base = new Set(ent?.entitledZones ?? []);
+    if (p === "MAN") (roleZones[role] ?? []).forEach((z) => base.add(z));
+    setZones(Array.from(base));
+  };
+  const onEntity = (eId: string) => { setEntityId(eId); autofillZones(eId, jobRole, pillar); };
+  const onRole = (r: string) => { setJobRole(r); autofillZones(entityId, r, pillar); };
+  const onPillar = (p: Pillar) => { setPillar(p); setPassType(PASS_TYPES[p][0]); setSubject(""); autofillZones(entityId, jobRole, p); };
+
+  const validTo = computeValidTo(passType, validFrom);
 
   // entity form
   const [eName, setEName] = useState("");
@@ -44,7 +68,10 @@ export default function Create() {
 
   const submitPass = () => {
     const subj = pillar === "VEHICLE" && adp ? `${subject} · ADP ${adp}` : subject;
-    const app = createApplication({ pillar, entityId, subject: subj, passType, zones });
+    const app = createApplication({
+      pillar, entityId, subject: subj, passType, zones,
+      jobRole: pillar === "MAN" ? jobRole : undefined, validFrom,
+    });
     setDone(`Raised ${app.id}`);
     setTimeout(() => nav(`/app/applications/${app.id}`), 700);
   };
@@ -73,7 +100,7 @@ export default function Create() {
                 const Icon = PILLAR_ICON[p.key];
                 return (
                   <button key={p.key} className={`pillar-opt ${pillar === p.key ? "active" : ""}`}
-                    onClick={() => { setPillar(p.key); setPassType(PASS_TYPES[p.key][0]); setSubject(""); }}>
+                    onClick={() => onPillar(p.key)}>
                     <Icon size={18} /><b>{p.roman} · {p.label}</b><small>{p.pass}</small>
                   </button>
                 );
@@ -83,13 +110,30 @@ export default function Create() {
 
           <div className="form-2col">
             <label className="fld"><span className="fld-l req">Sponsoring entity</span>
-              <select className="field" value={entityId} onChange={(e) => setEntityId(e.target.value)}>
+              <select className="field" value={entityId} onChange={(e) => onEntity(e.target.value)}>
                 {entities.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </select></label>
+              </select><span className="fld-hint">Zones auto-given from this entity's entitled set.</span></label>
             <label className="fld"><span className="fld-l req">Pass type</span>
               <select className="field" value={passType} onChange={(e) => setPassType(e.target.value as PassType)}>
                 {PASS_TYPES[pillar].map((t) => <option key={t} value={t}>{t}</option>)}
               </select></label>
+          </div>
+
+          {pillar === "MAN" && (
+            <label className="fld"><span className="fld-l req">Job role <ClauseBadge>auto-gives role zones</ClauseBadge></span>
+              <select className="field" value={jobRole} onChange={(e) => onRole(e.target.value)}>
+                {JOB_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select></label>
+          )}
+
+          <div className="form-2col">
+            <label className="fld"><span className="fld-l req">Valid from</span>
+              <input className="field" type="date" value={validFrom} min={isAdmin ? undefined : today()}
+                onChange={(e) => setValidFrom(e.target.value)} />
+              <span className="fld-hint">{isAdmin ? "Admin may back-date." : "Back-dating blocked — today or forward only."}</span></label>
+            <div className="fld"><span className="fld-l">Valid to <ClauseBadge>auto per norms</ClauseBadge></span>
+              <div className="valid-to"><CalendarClock size={15} /> <b className="mono">{validTo.to}</b></div>
+              <span className="fld-hint">{validTo.norm}</span></div>
           </div>
 
           <label className="fld"><span className="fld-l req">

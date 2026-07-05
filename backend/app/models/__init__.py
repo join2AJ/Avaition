@@ -10,9 +10,10 @@ from app.models.entity import (
     DocumentVerificationState,
 )
 from app.models.individual import Individual
+from app.models.subjects import MaterialItem, Vehicle
 from app.models.zone import Zone, JobRoleZoneMatrix, EntityZoneEntitlement, ZoneAssignment, ZoneEscalation
 from app.models.checklist import ChecklistItemTemplate, Checklist, ChecklistItemStatus
-from app.models.application import Application, ApplicationStatus, ApplicationComment
+from app.models.application import Application, ApplicationStatus, ApplicationComment, Pillar
 from app.models.committee import Committee, ApplicationCommitteeLink, CommitteeDecision
 from app.models.pass_issuance import PassIssuance, SurrenderReason
 from app.models.penalty import Penalty, EntityJustification, PenaltyStatus
@@ -32,6 +33,9 @@ __all__ = [
     "EntityDocument",
     "DocumentVerificationState",
     "Individual",
+    "MaterialItem",
+    "Vehicle",
+    "Pillar",
     "Zone",
     "JobRoleZoneMatrix",
     "EntityZoneEntitlement",

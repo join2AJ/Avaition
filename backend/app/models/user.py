@@ -14,6 +14,8 @@ class User(Base):
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     # Set for Entity-role users only; scopes every query to this entity.
     entity_id = Column(Integer, ForeignKey("entities.id"), nullable=True)
+    # Set for individual self-check logins; scopes to that person's records.
+    individual_id = Column(Integer, ForeignKey("individuals.id"), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

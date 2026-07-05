@@ -6,19 +6,43 @@ import { ROLES } from "@/domain/roles";
 import { PILLARS } from "@/domain/types";
 import type { Role } from "@/domain/types";
 
+// Combo options — note the two distinct admin logins (Operator-Admin vs
+// BCAS-Admin), plus every other login. Both admins map to the admin role.
+const LOGIN_OPTIONS: { id: string; role: Role; label: string }[] = [
+  { id: "admin-operator", role: "admin", label: "Admin — Airport Operator" },
+  { id: "admin-bcas", role: "admin", label: "Admin — BCAS" },
+  { id: "bcas", role: "bcas", label: "BCAS Officer" },
+  { id: "operator", role: "operator", label: "Pass Section — Operator" },
+  { id: "entity", role: "entity", label: "Entity" },
+  { id: "others", role: "others", label: "Others — Contractor / Govt" },
+  { id: "cisf", role: "cisf", label: "CISF — Gate Verification" },
+  { id: "individual", role: "individual", label: "Individual — Self-check" },
+];
+
 export default function Login() {
   const { signIn } = useAuth();
   const nav = useNavigate();
   const [active, setActive] = useState<Role | null>(null);
   const [name, setName] = useState("");
+  const [loginId, setLoginId] = useState("admin-operator");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const go = (role: Role) => {
+  const go = (role: Role, displayName?: string) => {
     signIn({
       role,
-      name: name.trim() || defaultName(role),
+      name: displayName || name.trim() || defaultName(role),
       entityId: role === "entity" || role === "individual" ? "ENT-01" : undefined,
     });
     nav(role === "cisf" ? "/app/verify" : "/app");
+  };
+
+  const signInCombo = () => {
+    const opt = LOGIN_OPTIONS.find((o) => o.id === loginId)!;
+    // Demo: any username/password is accepted; the display name reflects the
+    // chosen login (e.g. the two admin kinds are distinguishable in the audit).
+    const display = username.trim() || opt.label;
+    go(opt.role, opt.id === "admin-bcas" ? `BCAS Admin` : opt.id === "admin-operator" ? "Operator Admin" : display);
   };
 
   return (
@@ -40,7 +64,21 @@ export default function Login() {
           ))}
         </div>
 
-        <p className="eyebrow login-select">Select your role to sign in</p>
+        <div className="login-combo card card-pad">
+          <div className="combo-row">
+            <label className="fld"><span className="fld-l">Login as</span>
+              <select className="field" value={loginId} onChange={(e) => setLoginId(e.target.value)}>
+                {LOGIN_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select></label>
+            <label className="fld"><span className="fld-l">Username</span>
+              <input className="field" placeholder="username" value={username} onChange={(e) => setUsername(e.target.value)} /></label>
+            <label className="fld"><span className="fld-l">Password</span>
+              <input className="field" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && signInCombo()} /></label>
+            <button className="btn btn-brand combo-btn" onClick={signInCombo}>Sign in <ArrowRight size={15} /></button>
+          </div>
+        </div>
+
+        <p className="eyebrow login-select">Or use a direct login (demo)</p>
         <div className="role-grid">
           {ROLES.map((r) => (
             <button

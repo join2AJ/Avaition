@@ -37,10 +37,12 @@ export const ENTITIES: Entity[] = [
 ];
 
 export const INDIVIDUALS: Individual[] = [
-  { id: "IND-01", entityId: "ENT-01", name: "R. Sharma", jobRole: "Ramp Agent", hasLogin: true },
-  { id: "IND-02", entityId: "ENT-01", name: "M. Iyer", jobRole: "Baggage Handler", hasLogin: false },
-  { id: "IND-03", entityId: "ENT-03", name: "S. Khan", jobRole: "Catering Loader", hasLogin: true },
-  { id: "IND-04", entityId: "ENT-04", name: "D. Rao", jobRole: "Fuel Technician", hasLogin: false },
+  { id: "IND-01", entityId: "ENT-01", name: "R. Sharma", jobRole: "Ramp Agent", hasLogin: true, state: "Uttar Pradesh", district: "Lucknow", religion: "Hindu", bloodGroup: "O+", zones: ["A", "D", "P"] },
+  { id: "IND-02", entityId: "ENT-01", name: "M. Iyer", jobRole: "Baggage Handler", hasLogin: false, state: "Tamil Nadu", district: "Chennai", religion: "Hindu", bloodGroup: "B+", zones: ["A", "D", "B"] },
+  { id: "IND-03", entityId: "ENT-03", name: "S. Khan", jobRole: "Catering Loader", hasLogin: true, state: "Uttar Pradesh", district: "Kanpur", religion: "Muslim", bloodGroup: "A+", zones: ["T", "P"] },
+  { id: "IND-04", entityId: "ENT-04", name: "D. Rao", jobRole: "Fuel Technician", hasLogin: false, state: "Telangana", district: "Hyderabad", religion: "Hindu", bloodGroup: "AB+", zones: ["P", "T"] },
+  { id: "IND-05", entityId: "ENT-02", name: "P. Nair", jobRole: "Security Screener", hasLogin: false, state: "Kerala", district: "Kochi", religion: "Christian", bloodGroup: "O-", zones: ["T", "Si", "P"] },
+  { id: "IND-06", entityId: "ENT-05", name: "A. Reddy", jobRole: "Cargo Handler", hasLogin: false, state: "Andhra Pradesh", district: "Vijayawada", religion: "Hindu", bloodGroup: "B-", zones: ["Cd", "Csd"] },
 ];
 
 export interface Committee { id: string; date: string; chair: string; members: string; applicationIds: string[]; }

@@ -62,6 +62,27 @@ export default function Dashboard() {
         <span className="pill tone-green pill-dot">Audit trail on</span>
       </div>
 
+      {(() => {
+        const clar = states.find((s) => s.key === "clarification")?.count ?? 0;
+        const actions = [
+          { label: "Breached SLA — justify", n: sla.breached, tone: "red", to: "" },
+          { label: "In clarification", n: clar, tone: "amber", to: "stage=clarification" },
+          { label: "Expiring ≤ 30 days", n: expiring, tone: "amber", to: "" },
+          { label: "Late surrenders", n: 2, tone: "red", to: "" },
+        ].filter((a) => a.n > 0);
+        if (!actions.length) return null;
+        return (
+          <div className="action-strip">
+            <span className="action-lead"><AlertTriangle size={15} /> Needs attention</span>
+            {actions.map((a) => (
+              <button key={a.label} className={`action-chip tone-${a.tone}`} onClick={() => go(a.to)}>
+                <b>{a.n}</b> {a.label}
+              </button>
+            ))}
+          </div>
+        );
+      })()}
+
       <div className="kpi-grid stagger">
         {tiles.map((t) => (
           <div key={t.label} onClick={() => t.to !== undefined && go(t.to)} className="kpi-link">

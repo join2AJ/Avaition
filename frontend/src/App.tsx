@@ -9,6 +9,8 @@ import Checklist from "./pages/Checklist";
 import Verify from "./pages/Verify";
 import AccessControl from "./pages/AccessControl";
 import ZoneAccess from "./pages/ZoneAccess";
+import ValidityMatrix from "./pages/ValidityMatrix";
+import EntityStatus from "./pages/EntityStatus";
 import Committees from "./pages/Committees";
 import Zones from "./pages/Zones";
 import EntityOnboarding from "./pages/EntityOnboarding";
@@ -42,6 +44,8 @@ export default function App() {
                 <Route path="verify" element={<Verify />} />
                 <Route path="access" element={<AccessControl />} />
                 <Route path="zone-access" element={<ZoneAccess />} />
+                <Route path="validity" element={<ValidityMatrix />} />
+                <Route path="status" element={<EntityStatus />} />
                 <Route path="committees" element={<Committees />} />
                 <Route path="entities" element={<EntityOnboarding />} />
                 <Route path="zones" element={<Zones />} />

@@ -71,6 +71,11 @@ export interface Individual {
   name: string;
   jobRole: string;
   hasLogin: boolean; // entity may authorize a self-check login
+  state?: string;
+  district?: string;
+  religion?: string;
+  bloodGroup?: string;
+  zones?: string[];
 }
 
 export interface StepLog {

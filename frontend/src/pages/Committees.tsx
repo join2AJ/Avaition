@@ -1,15 +1,41 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, Users2, CheckCircle2, ChevronRight } from "lucide-react";
+import { CalendarClock, Users2, CheckCircle2, ChevronRight, ArrowRight } from "lucide-react";
 import type { Application, Entity } from "@/domain/types";
 import type { Committee } from "@/lib/demoData";
 import { api, entityName } from "@/lib/api";
+import { useAuth } from "@/app/auth";
+import { useData } from "@/app/data";
+import { today } from "@/domain/entitlements";
 import { PillarBadge, Pill } from "@/components/ui";
 
+// The committee processing chain — Pass Section verifies, forwards to BCAS for
+// scrutiny; BCAS returns to Pass Section or another selected agency; records
+// updated; printed; BCAS verifies hard cards; operator distributes; individuals
+// cross-sign.
+const COMMITTEE_STAGES = [
+  "Pass Section verification",
+  "Forwarded to BCAS",
+  "BCAS committee scrutiny",
+  "Returned to agency",
+  "Records updated & submitted",
+  "Printing",
+  "BCAS hard-card verification",
+  "Operator distribution + cross-sign",
+];
+
 export default function Committees() {
+  const { session } = useAuth();
+  const { log } = useData();
   const [committees, setCommittees] = useState<Committee[]>([]);
   const [apps, setApps] = useState<Application[]>([]);
   const [entities, setEntities] = useState<Entity[]>([]);
+  const [propDate, setPropDate] = useState("");
+  const [propTime, setPropTime] = useState("10:00");
+  const [agency, setAgency] = useState("Pass Section (Aerodrome)");
+  const [proposed, setProposed] = useState<string | null>(null);
+  const isAdmin = session?.role === "admin";
+  const canPropose = ["admin", "operator", "bcas"].includes(session!.role);
 
   useEffect(() => {
     api.listCommittees().then(setCommittees);
@@ -20,6 +46,12 @@ export default function Committees() {
   const ready = apps.filter((a) => a.status === "committee_scheduled");
   const byId = (id: string) => apps.find((a) => a.id === id);
 
+  const propose = () => {
+    if (!propDate) return;
+    log("propose_committee", `${propDate} ${propTime}`, `Committee proposed · return agency: ${agency}`);
+    setProposed(`Proposed for ${propDate} ${propTime} · returns to ${agency}`);
+  };
+
   return (
     <div className="page">
       <div className="page-head">
@@ -29,6 +61,34 @@ export default function Committees() {
         </div>
         <Pill tone="violet" dot>{ready.length} committee-ready</Pill>
       </div>
+
+      {canPropose && (
+        <section className="card card-pad">
+          <div className="card-head"><span className="section-title">Propose a committee</span><span className="muted" style={{ fontSize: 12 }}>Proposed by BCAS or Pass Section · today or forward only</span></div>
+          <div className="filter-row">
+            <label className="filter-date">Date <input type="date" className="field mini" min={isAdmin ? undefined : today()} value={propDate} onChange={(e) => setPropDate(e.target.value)} /></label>
+            <label className="filter-date">Time <input type="time" className="field mini" value={propTime} onChange={(e) => setPropTime(e.target.value)} /></label>
+            <label className="filter-date">Return to
+              <select className="field mini" value={agency} onChange={(e) => setAgency(e.target.value)}>
+                <option>Pass Section (Aerodrome)</option><option>Airport Operator</option><option>CISF / ASG</option><option>Other agency (BCAS-selected)</option>
+              </select></label>
+            <button className="btn btn-brand mini-btn" disabled={!propDate} onClick={propose}>Propose <ArrowRight size={14} /></button>
+            {proposed && <span className="pill tone-green pill-dot">{proposed}</span>}
+          </div>
+        </section>
+      )}
+
+      <section className="card card-pad">
+        <div className="card-head"><span className="section-title">Committee processing chain</span><span className="muted" style={{ fontSize: 12 }}>§8.3.3 · verification → scrutiny → print → distribution</span></div>
+        <div className="chain">
+          {COMMITTEE_STAGES.map((s, i) => (
+            <span className="chain-node" key={s}>
+              <span className="chain-dot">{i + 1}</span><span className="chain-label">{s}</span>
+              {i < COMMITTEE_STAGES.length - 1 && <ArrowRight size={13} className="chain-arrow muted" />}
+            </span>
+          ))}
+        </div>
+      </section>
 
       <div className="cmte-grid">
         {committees.map((c) => (

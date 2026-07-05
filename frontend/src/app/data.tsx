@@ -4,6 +4,7 @@ import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, type AuditEntry } from "@/l
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
+import { BASE_ROLES, newRole, type RoleDef, type Vertical, type Crud } from "@/domain/permissions";
 
 // Persist the working set for the session so created records survive reloads.
 function load<T>(key: string, fallback: T): T {
@@ -41,11 +42,14 @@ export type RoleZoneMatrix = Record<string, string[]>;
 interface DataCtx {
   entities: Entity[]; individuals: Individual[]; applications: Application[]; audit: AuditEntry[];
   roleZones: RoleZoneMatrix;
+  roles: RoleDef[];
   createEntity: (e: NewEntity) => Entity;
   createIndividual: (i: NewIndividual) => Individual;
   createApplication: (a: NewApplication) => Application;
   setEntityZones: (entityId: string, zones: string[]) => void;   // BCAS / Admin edit
   setRoleZones: (role: string, zones: string[]) => void;         // BCAS / Admin edit
+  createRole: (label: string) => void;                           // Admin / Operator / BCAS
+  setPermission: (roleKey: string, vertical: Vertical, op: keyof Crud, val: boolean) => void;
   recordSlaJustification: (appId: string, note: string) => void;
   log: (action: string, object: string, detail: string, tone?: AuditEntry["tone"]) => void;
 }
@@ -59,12 +63,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [applications, setApplications] = useState<Application[]>(() => load("aep-applications", APPLICATIONS));
   const [audit, setAudit] = useState<AuditEntry[]>(() => load("aep-audit", AUDIT));
   const [roleZones, setRoleZones_] = useState<RoleZoneMatrix>(() => load("aep-rolezones", ROLE_ZONES));
+  const [roles, setRoles] = useState<RoleDef[]>(() => load("aep-roles", BASE_ROLES));
 
   useEffect(() => { sessionStorage.setItem("aep-entities", JSON.stringify(entities)); }, [entities]);
   useEffect(() => { sessionStorage.setItem("aep-individuals", JSON.stringify(individuals)); }, [individuals]);
   useEffect(() => { sessionStorage.setItem("aep-applications", JSON.stringify(applications)); }, [applications]);
   useEffect(() => { sessionStorage.setItem("aep-audit", JSON.stringify(audit)); }, [audit]);
   useEffect(() => { sessionStorage.setItem("aep-rolezones", JSON.stringify(roleZones)); }, [roleZones]);
+  useEffect(() => { sessionStorage.setItem("aep-roles", JSON.stringify(roles)); }, [roles]);
 
   const log: DataCtx["log"] = (action, object, detail, tone = "ok") => {
     const actor = session?.name ?? "system";
@@ -93,6 +99,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setRoleZones_((m) => ({ ...m, [role]: zones }));
     log("edit_role_zones", role, `Role zone-need set to ${zones.join(" ") || "—"}`);
   };
+  const createRole: DataCtx["createRole"] = (label) => {
+    const r = newRole(label);
+    setRoles((x) => [...x, r]);
+    // Flagged to BCAS: a new role has no access until BCAS assigns it.
+    log("create_role", r.key, `Role "${label}" created — awaiting BCAS access assignment`, "warn");
+  };
+  const setPermission: DataCtx["setPermission"] = (roleKey, vertical, op, val) => {
+    setRoles((x) => x.map((r) => {
+      if (r.key !== roleKey) return r;
+      const perms = { ...r.perms, [vertical]: { ...r.perms[vertical], [op]: val } };
+      const assigned = Object.values(perms).some((c) => c.c || c.r || c.u || c.d);
+      return { ...r, perms, assigned };
+    }));
+    log("edit_permission", roleKey, `${vertical}.${op} = ${val}`);
+  };
+
   const recordSlaJustification: DataCtx["recordSlaJustification"] = (appId, note) => {
     setApplications((x) => x.map((a) => (a.id === appId
       ? { ...a, stepLog: [...(a.stepLog ?? []), { stage: a.status, at: now(), by: session?.name, slaNote: note }] } : a)));
@@ -139,9 +161,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      entities, individuals, applications, audit, roleZones,
+      entities, individuals, applications, audit, roleZones, roles,
       createEntity, createIndividual, createApplication,
-      setEntityZones, setRoleZones, recordSlaJustification, log,
+      setEntityZones, setRoleZones, createRole, setPermission, recordSlaJustification, log,
     }}>
       {children}
     </Ctx.Provider>

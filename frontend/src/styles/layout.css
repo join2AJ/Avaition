@@ -327,8 +327,29 @@
 .perm-matrix thead th:first-child { text-align: left; border-radius: 0; }
 .mx-vert { text-align: left !important; font-weight: 600; font-size: 13px; white-space: nowrap; }
 .crud { display: inline-flex; gap: 4px; }
-.crud-cell { display: inline-flex; align-items: center; gap: 1px; font-size: 10px; font-weight: 700; color: var(--text-muted); opacity: 0.4; }
+.crud-cell { display: inline-flex; align-items: center; gap: 1px; font-size: 10px; font-weight: 700; color: var(--text-muted); opacity: 0.4; background: none; border: 1px solid transparent; border-radius: 5px; padding: 2px 4px; }
 .crud-cell.on { color: var(--green-700); opacity: 1; }
+.crud-cell.editable { cursor: pointer; }
+.crud-cell.editable:hover:not(:disabled) { border-color: var(--border-strong); background: var(--surface-sunken); }
+.crud-cell.editable.on:hover { border-color: var(--green-300); }
+.role-flag { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--red-500); background: var(--red-100); padding: 1px 6px; border-radius: 5px; margin-left: 8px; }
+.role-custom { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--navy-500); background: var(--blue-100); padding: 1px 6px; border-radius: 5px; margin-left: 8px; }
+.flag-banner { display: flex; align-items: center; gap: 12px; border-color: #e7c4c4; background: var(--red-100); font-size: 13px; color: var(--red-700); }
+.create-role-row { display: flex; flex-direction: column; gap: 8px; }
+.crr-form { display: flex; gap: 10px; max-width: 520px; }
+.crr-form .field { flex: 1; }
+
+/* surrender table */
+.sur-table { width: 100%; border-collapse: collapse; }
+.sur-table th, .sur-table td { padding: 11px 12px; text-align: left; font-size: 12.5px; border-bottom: 1px solid var(--border-hairline); white-space: nowrap; }
+.sur-table thead th { background: var(--ink-900); color: #fff; font-size: 11px; font-weight: 600; }
+.sur-holder { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.sur-just { white-space: normal; min-width: 180px; font-size: 12px; }
+
+/* zone access controls */
+.za-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.za-search { display: flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-hairline); border-radius: var(--radius-md); padding: 8px 12px; min-width: 240px; }
+.za-search input { border: none; background: none; outline: none; flex: 1; font-size: 13px; color: var(--text-strong); }
 
 /* ===== Audit ============================================================= */
 .audit-cats { display: flex; flex-wrap: wrap; gap: 8px; }

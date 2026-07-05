@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Users2, Check } from "lucide-react";
+import { Building2, Users2, Check, Search } from "lucide-react";
 import { useData } from "@/app/data";
 import { ZONES } from "@/domain/zones";
 
@@ -9,6 +9,10 @@ import { ZONES } from "@/domain/zones";
 export default function ZoneAccess() {
   const { entities, roleZones, setEntityZones, setRoleZones } = useData();
   const [tab, setTab] = useState<"entity" | "role">("entity");
+  const [q, setQ] = useState("");
+  const nq = q.trim().toLowerCase();
+  const entRows = entities.filter((e) => !nq || e.name.toLowerCase().includes(nq));
+  const roleRows = Object.keys(roleZones).filter((r) => !nq || r.toLowerCase().includes(nq));
 
   const toggleEntity = (id: string, code: string, on: boolean) => {
     const ent = entities.find((e) => e.id === id)!;
@@ -31,9 +35,15 @@ export default function ZoneAccess() {
         </div>
       </div>
 
-      <div className="create-tabs">
-        <button className={`ctab ${tab === "entity" ? "active" : ""}`} onClick={() => setTab("entity")}><Building2 size={15} /> Entity-wise zones</button>
-        <button className={`ctab ${tab === "role" ? "active" : ""}`} onClick={() => setTab("role")}><Users2 size={15} /> Role-wise zones</button>
+      <div className="za-controls">
+        <div className="create-tabs">
+          <button className={`ctab ${tab === "entity" ? "active" : ""}`} onClick={() => setTab("entity")}><Building2 size={15} /> Entity-wise zones</button>
+          <button className={`ctab ${tab === "role" ? "active" : ""}`} onClick={() => setTab("role")}><Users2 size={15} /> Role-wise zones</button>
+        </div>
+        <div className="za-search">
+          <Search size={15} className="muted" />
+          <input placeholder={`Search ${tab === "entity" ? "entities" : "roles"}…`} value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
       </div>
 
       <section className="card za-card">
@@ -45,7 +55,7 @@ export default function ZoneAccess() {
             </thead>
             <tbody>
               {tab === "entity"
-                ? entities.map((e) => (
+                ? entRows.map((e) => (
                     <tr key={e.id}>
                       <td className="za-name">{e.name}</td>
                       {ZONES.map((z) => {
@@ -55,7 +65,7 @@ export default function ZoneAccess() {
                       })}
                     </tr>
                   ))
-                : Object.keys(roleZones).map((role) => (
+                : roleRows.map((role) => (
                     <tr key={role}>
                       <td className="za-name">{role}</td>
                       {ZONES.map((z) => {

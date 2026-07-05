@@ -31,8 +31,8 @@ const ALL: Record<string, NavItem> = {
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.users, ALL.access, ALL.audit],
-  bcas: [ALL.dashboard, ALL.applications, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.audit],
-  operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.penalties],
+  bcas: [ALL.dashboard, ALL.applications, ALL.zones, ALL.zoneaccess, ALL.penalties, ALL.users, ALL.audit],
+  operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.zoneaccess, ALL.users, ALL.penalties],
   cisf: [ALL.verify],
   entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.zones, ALL.profile],
   others: [ALL.dashboard, ALL.create, ALL.applications, ALL.profile],

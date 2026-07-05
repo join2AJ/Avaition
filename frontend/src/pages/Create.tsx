@@ -33,19 +33,25 @@ export default function Create() {
   const [passType, setPassType] = useState<PassType>("BAEP");
   const [zones, setZones] = useState<string[]>(() => {
     const ent = entities.find((e) => e.id === (entities[0]?.id));
-    const base = new Set(ent?.entitledZones ?? []);
-    (roleZones[JOB_ROLES[0]] ?? []).forEach((z) => base.add(z));
-    return Array.from(base);
+    const entZones = new Set(ent?.entitledZones ?? []);
+    return (roleZones[JOB_ROLES[0]] ?? []).filter((z) => entZones.has(z));
   });
   const [adp, setAdp] = useState("");
   const [validFrom, setValidFrom] = useState(today());
 
-  // Auto-give zones from the entity's entitled set ∪ the job-role need.
+  // Company → role gating: a person only gets a zone if BOTH the entity is
+  // entitled to it AND the job role needs it. Role access is capped by company
+  // access (role zones ∩ entity zones). For MATERIAL/VEHICLE (no job role) the
+  // entity's entitled set is proposed.
   const autofillZones = (eId: string, role: string, p: Pillar) => {
     const ent = entities.find((e) => e.id === eId);
-    const base = new Set(ent?.entitledZones ?? []);
-    if (p === "MAN") (roleZones[role] ?? []).forEach((z) => base.add(z));
-    setZones(Array.from(base));
+    const entZones = new Set(ent?.entitledZones ?? []);
+    if (p === "MAN") {
+      const need = roleZones[role] ?? [];
+      setZones(need.filter((z) => entZones.has(z)));
+    } else {
+      setZones(Array.from(entZones));
+    }
   };
   const onEntity = (eId: string) => { setEntityId(eId); autofillZones(eId, jobRole, pillar); };
   const onRole = (r: string) => { setJobRole(r); autofillZones(entityId, r, pillar); };

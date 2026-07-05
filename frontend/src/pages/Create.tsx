@@ -12,14 +12,19 @@ type Tab = "pass" | "entity" | "individual";
 
 const PILLAR_ICON = { MAN: Plane, MATERIAL: Wrench, VEHICLE: Truck };
 const PASS_TYPES: Record<Pillar, PassType[]> = {
-  MAN: ["BAEP", "TAEP", "VAT", "Permanent"],
+  // Protocol (paper), One-Day and TAEP (≤30 days) need no BGC; >30 days needs a
+  // BCAS-approval exception; BAEP/PAEP (>31 days) is the biometric permanent card.
+  MAN: ["BAEP", "Permanent", "TAEP", "VAT"],
   MATERIAL: ["ToT"],
   // ADP (driver) is applied FIRST; the VEP/VAP is issued against a valid ADP.
   VEHICLE: ["ADP", "VEP", "VAP"],
 };
+// MAN sub-type presets shown as quick chips.
+const MAN_SUBTYPES = ["BAEP (>31 days)", "TAEP (≤30 days)", "One-Day", "Protocol (paper)"];
+const MATERIAL_SUBTYPES = ["One-Day", "One-month", "Quarterly (3 mo)"];
 
 export default function Create() {
-  const { entities, roleZones, createEntity, createIndividual, createApplication } = useData();
+  const { entities, roleZones, contracts, createEntity, createIndividual, createApplication } = useData();
   const { session } = useAuth();
   const nav = useNavigate();
   const isAdmin = session?.role === "admin";
@@ -39,6 +44,9 @@ export default function Create() {
   });
   const [adp, setAdp] = useState("");
   const [validFrom, setValidFrom] = useState(today());
+  const [subType, setSubType] = useState("");
+  const entityContracts = contracts.filter((c) => c.entityId === entityId && c.status === "active");
+  const [contractId, setContractId] = useState(entityContracts[0]?.id ?? "");
 
   // Company → role gating: a person only gets a zone if BOTH the entity is
   // entitled to it AND the job role needs it. Role access is capped by company
@@ -77,7 +85,7 @@ export default function Create() {
     const subj = pillar === "VEHICLE" && adp ? `${subject} · ADP ${adp}` : subject;
     const app = createApplication({
       pillar, entityId, subject: subj, passType, zones,
-      jobRole: pillar === "MAN" ? jobRole : undefined, validFrom,
+      jobRole: pillar === "MAN" ? jobRole : undefined, validFrom, contractId,
     });
     setDone(`Raised ${app.id}`);
     setTimeout(() => nav(`/app/applications/${app.id}`), 700);
@@ -126,11 +134,30 @@ export default function Create() {
               </select></label>
           </div>
 
-          {pillar === "MAN" && (
-            <label className="fld"><span className="fld-l req">Job role <ClauseBadge>auto-gives role zones</ClauseBadge></span>
-              <select className="field" value={jobRole} onChange={(e) => onRole(e.target.value)}>
-                {JOB_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select></label>
+          <div className="form-2col">
+            <label className="fld"><span className="fld-l req">Under contract</span>
+              <select className="field" value={contractId} onChange={(e) => setContractId(e.target.value)}>
+                {entityContracts.length === 0 && <option value="">— no active contract —</option>}
+                {entityContracts.map((c) => <option key={c.id} value={c.id}>{c.id} · {c.counterparty} (till {c.end})</option>)}
+              </select><span className="fld-hint">Pass is tied to this contract; it surrenders if the contract ends.</span></label>
+            {pillar === "MAN" && (
+              <label className="fld"><span className="fld-l req">Job role <ClauseBadge>auto-gives role zones</ClauseBadge></span>
+                <select className="field" value={jobRole} onChange={(e) => onRole(e.target.value)}>
+                  {JOB_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select></label>
+            )}
+          </div>
+
+          {(pillar === "MAN" || pillar === "MATERIAL") && (
+            <div className="fld"><span className="fld-l">Sub-type</span>
+              <div className="subtype-chips">
+                {(pillar === "MAN" ? MAN_SUBTYPES : MATERIAL_SUBTYPES).map((s) => (
+                  <button key={s} className={`subtype-chip ${subType === s ? "on" : ""}`} onClick={() => setSubType(s)}>{s}</button>
+                ))}
+              </div>
+              {pillar === "MAN" && subType.startsWith("TAEP") && <span className="fld-hint">≤30 days · no BGC · escort required in SRA. Beyond 30 days needs a BCAS-approval exception (§8.3.4.3).</span>}
+              {pillar === "MATERIAL" && <span className="fld-hint">Material can only enter a zone the escorting AEP holder is entitled to (§12B).</span>}
+            </div>
           )}
 
           <div className="form-2col">

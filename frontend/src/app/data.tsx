@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Application, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole } from "@/domain/types";
-import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, type AuditEntry } from "@/lib/demoData";
+import type { Application, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage } from "@/domain/types";
+import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, type AuditEntry } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
@@ -38,18 +38,24 @@ export interface NewEntity {
 export interface NewIndividual { entityId: string; name: string; jobRole: string; loginAuthorized: boolean; }
 export interface NewApplication {
   pillar: Pillar; entityId: string; subject: string; passType: PassType; zones: string[];
-  jobRole?: string; validFrom: string;
+  jobRole?: string; validFrom: string; contractId?: string;
 }
+export interface NewContract { entityId: string; counterparty: string; type: string; start: string; end: string; scope: string; copyFileName?: string; }
 
 export type RoleZoneMatrix = Record<string, string[]>;
 
 interface DataCtx {
   entities: Entity[]; individuals: Individual[]; applications: Application[]; audit: AuditEntry[];
+  contracts: Contract[]; notifications: Notification[];
   roleZones: RoleZoneMatrix;
   roles: RoleDef[];
   createEntity: (e: NewEntity) => Entity;
   createIndividual: (i: NewIndividual) => Individual;
   createApplication: (a: NewApplication) => Application;
+  createContract: (c: NewContract) => Contract;
+  terminateContract: (contractId: string) => void;
+  advanceApproval: (entityId: string) => void;
+  markNotificationsRead: () => void;
   setEntityZones: (entityId: string, zones: string[]) => void;   // BCAS / Admin edit
   setRoleZones: (role: string, zones: string[]) => void;         // BCAS / Admin edit
   createRole: (label: string) => void;                           // Admin / Operator / BCAS
@@ -68,6 +74,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [audit, setAudit] = useState<AuditEntry[]>(() => load("aep-audit", AUDIT));
   const [roleZones, setRoleZones_] = useState<RoleZoneMatrix>(() => load("aep-rolezones", ROLE_ZONES));
   const [roles, setRoles] = useState<RoleDef[]>(() => load("aep-roles", BASE_ROLES));
+  const [contracts, setContracts] = useState<Contract[]>(() => load("aep-contracts", CONTRACTS));
+  const [notifications, setNotifications] = useState<Notification[]>(() => load("aep-notifs", []));
+
+  useEffect(() => { sessionStorage.setItem("aep-contracts", JSON.stringify(contracts)); }, [contracts]);
+  useEffect(() => { sessionStorage.setItem("aep-notifs", JSON.stringify(notifications)); }, [notifications]);
 
   useEffect(() => { sessionStorage.setItem("aep-entities", JSON.stringify(entities)); }, [entities]);
   useEffect(() => { sessionStorage.setItem("aep-individuals", JSON.stringify(individuals)); }, [individuals]);
@@ -103,6 +114,60 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setRoleZones_((m) => ({ ...m, [role]: zones }));
     log("edit_role_zones", role, `Role zone-need set to ${zones.join(" ") || "—"}`);
   };
+  const notify = (to: string, type: string, message: string, tone: Notification["tone"] = "warn") => {
+    setNotifications((n) => [{ id: `NTF-${Date.now()}-${Math.floor(Math.random() * 1000)}`, ts: now(), to, type, message, tone, read: false }, ...n]);
+  };
+  const markNotificationsRead: DataCtx["markNotificationsRead"] = () => setNotifications((n) => n.map((x) => ({ ...x, read: true })));
+
+  const createContract: DataCtx["createContract"] = (c) => {
+    const con: Contract = { id: nextId(contracts, "CON-", 2), status: "active", ...c };
+    setContracts((x) => [...x, con]);
+    log("create_contract", con.id, `${con.counterparty} · ${con.type} · till ${con.end}`);
+    return con;
+  };
+
+  // Contract termination cascade — passes raised under it move to surrendered
+  // (terminated category), and everyone concerned is intimated. An individual
+  // whose zones are still covered by another active contract is unaffected;
+  // one whose zones would shrink must re-apply (§10.7 · §10.3).
+  const terminateContract: DataCtx["terminateContract"] = (contractId) => {
+    const con = contracts.find((c) => c.id === contractId);
+    if (!con) return;
+    setContracts((x) => x.map((c) => (c.id === contractId ? { ...c, status: "terminated" } : c)));
+
+    const affected = applications.filter((a) => a.contractId === contractId && a.status !== "surrendered");
+    setApplications((x) => x.map((a) => (a.contractId === contractId ? { ...a, status: "surrendered" } : a)));
+
+    // Which individuals lose zones vs stay covered by their other contracts.
+    const otherActive = applications.filter((a) => a.contractId !== contractId && a.status !== "surrendered" && a.status !== "rejected");
+    const reapply: string[] = [];
+    const unaffected: string[] = [];
+    affected.filter((a) => a.pillar === "MAN").forEach((a) => {
+      const covered = new Set(otherActive.filter((o) => o.subject === a.subject).flatMap((o) => o.zones));
+      const lost = a.zones.filter((z) => !covered.has(z));
+      (lost.length ? reapply : unaffected).push(a.subject);
+    });
+
+    const ent = entities.find((e) => e.id === con.entityId);
+    log("terminate_contract", contractId, `${con.counterparty} · ${affected.length} passes terminated`, "bad");
+    notify("entity", "contract_terminated", `Contract ${contractId} (${con.counterparty}) terminated — ${affected.length} passes surrendered. Complete closing formalities within 7 days (§10.7).`, "bad");
+    notify("bcas", "contract_terminated", `${ent?.name ?? con.entityId}: contract ${contractId} terminated — ${affected.length} passes moved to surrender.`, "bad");
+    if (reapply.length) notify("individual", "reapply_required", `Zone reduction after contract ${contractId} ended: ${Array.from(new Set(reapply)).join(", ")} must re-apply for reduced access.`, "warn");
+    if (unaffected.length) notify("individual", "coverage_ok", `Contract ${contractId} ended but zones remain covered by another contract for: ${Array.from(new Set(unaffected)).join(", ")}.`, "ok");
+  };
+
+  const advanceApproval: DataCtx["advanceApproval"] = (entityId) => {
+    const order: ApprovalStage[] = ["registration", "documentation", "matrix", "verification", "bcas_approved"];
+    setEntities((x) => x.map((e) => {
+      if (e.id !== entityId) return e;
+      const cur = e.approvalStage ?? "registration";
+      const next = order[Math.min(order.indexOf(cur) + 1, order.length - 1)];
+      log("advance_approval", entityId, `${cur} → ${next}`);
+      if (next === "bcas_approved") notify("entity", "registration_approved", `${e.name}: registration approved by BCAS — you may now raise passes.`, "ok");
+      return { ...e, approvalStage: next };
+    }));
+  };
+
   const createRole: DataCtx["createRole"] = (label) => {
     const r = newRole(label);
     setRoles((x) => [...x, r]);
@@ -162,6 +227,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const ts = now();
     const app: Application = {
       id: nextId(applications, "APP-", 4), pillar: a.pillar, entityId: a.entityId, subject: a.subject,
+      contractId: a.contractId,
       jobRole: a.jobRole, passType: a.passType, zones: a.zones, status: "checklist_pending",
       createdBy: ROLE_LABEL[session?.role ?? "operator"], createdAt: from, createdAtTs: ts,
       validFrom: from, validTo: to,
@@ -175,8 +241,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      entities, individuals, applications, audit, roleZones, roles,
-      createEntity, createIndividual, createApplication,
+      entities, individuals, applications, audit, contracts, notifications, roleZones, roles,
+      createEntity, createIndividual, createApplication, createContract, terminateContract,
+      advanceApproval, markNotificationsRead,
       setEntityZones, setRoleZones, createRole, setPermission, recordSlaJustification, log,
     }}>
       {children}

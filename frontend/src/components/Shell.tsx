@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { Bell, LogOut, Moon, Plane, Search, Sun, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useTheme } from "@/app/theme";
+import { useData } from "@/app/data";
 import { NAV_BY_ROLE } from "@/app/nav";
 import { ROLE_LABEL } from "@/domain/roles";
 import { PILLARS } from "@/domain/types";
@@ -10,9 +11,12 @@ import { PILLARS } from "@/domain/types";
 export default function Shell({ children }: { children: ReactNode }) {
   const { session, signOut } = useAuth();
   const { theme, toggle } = useTheme();
+  const { notifications, markNotificationsRead } = useData();
   const nav = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [showNotifs, setShowNotifs] = useState(false);
   const [q, setQ] = useState("");
+  const unread = notifications.filter((n) => !n.read).length;
   const searchRef = useRef<HTMLInputElement>(null);
 
   // ⌘K / Ctrl-K focuses the search from anywhere.
@@ -90,7 +94,25 @@ export default function Shell({ children }: { children: ReactNode }) {
             <button className="icon-btn" onClick={toggle} aria-label="Toggle theme">
               {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
             </button>
-            <button className="icon-btn" aria-label="Notifications"><Bell size={17} /><span className="dot" /></button>
+            <div className="notif-wrap">
+              <button className="icon-btn" aria-label="Notifications" onClick={() => { setShowNotifs((s) => !s); if (!showNotifs) markNotificationsRead(); }}>
+                <Bell size={17} />{unread > 0 && <span className="notif-badge">{unread}</span>}
+              </button>
+              {showNotifs && (
+                <div className="notif-panel">
+                  <div className="notif-head">Notifications <span className="muted">{notifications.length}</span></div>
+                  <div className="notif-list">
+                    {notifications.length === 0 && <div className="notif-empty muted">No notifications yet.</div>}
+                    {notifications.slice(0, 12).map((n) => (
+                      <div className={`notif-item ${n.tone}`} key={n.id}>
+                        <span className="notif-to mono">{n.to}</span>
+                        <div>{n.message}<div className="notif-ts mono">{n.ts}</div></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="user-chip">
               <span className="avatar">{session.name.slice(0, 1).toUpperCase()}</span>
               <span className="user-meta"><b>{session.name}</b><small>{ROLE_LABEL[session.role]}</small></span>

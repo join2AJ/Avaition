@@ -46,6 +46,37 @@ export interface GuidelineClause {
   description: string;
 }
 
+export type ApprovalStage = "registration" | "documentation" | "matrix" | "verification" | "bcas_approved";
+export const APPROVAL_STAGES: { key: ApprovalStage; label: string }[] = [
+  { key: "registration", label: "Registration" },
+  { key: "documentation", label: "Documentation" },
+  { key: "matrix", label: "Defining matrix" },
+  { key: "verification", label: "Verification" },
+  { key: "bcas_approved", label: "BCAS approved" },
+];
+
+export interface Contract {
+  id: string;               // CON-01
+  entityId: string;
+  counterparty: string;     // company / airport operator the contract is with
+  type: string;             // LOI / LOA / PO / SO / Work Order
+  start: string;
+  end: string;
+  copyFileName?: string;
+  scope: string;            // functional scope (drives allowed zones)
+  status: "active" | "terminated" | "expired";
+}
+
+export interface Notification {
+  id: string;
+  ts: string;
+  to: string;               // audience: entity / bcas / individual / operator
+  type: string;
+  message: string;
+  tone: "ok" | "warn" | "bad";
+  read: boolean;
+}
+
 export interface Signatory { name: string; designation: string; certifiedBy: string; dsc?: string; }
 export interface EntityDoc { name: string; reference?: string; expiry?: string; fileName?: string; }
 export interface EntityJobRole { role: string; zones: string[]; justification: string; }
@@ -63,6 +94,7 @@ export interface Entity {
   signatories?: Signatory[];
   docs?: EntityDoc[];
   jobRoles?: EntityJobRole[];
+  approvalStage?: ApprovalStage;
 }
 
 export interface Individual {
@@ -90,6 +122,7 @@ export interface Application {
   id: string; // APP-2216
   pillar: Pillar;
   entityId: string;
+  contractId?: string; // the contract this pass is raised under
   subject: string; // person name (MAN) / item (MATERIAL) / vehicle (VEHICLE)
   jobRole?: string; // MAN — drives zone-need
   passType: PassType;

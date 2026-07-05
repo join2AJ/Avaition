@@ -45,6 +45,14 @@ export const INDIVIDUALS: Individual[] = [
   { id: "IND-06", entityId: "ENT-05", name: "A. Reddy", jobRole: "Cargo Handler", hasLogin: false, state: "Andhra Pradesh", district: "Vijayawada", religion: "Hindu", bloodGroup: "B-", zones: ["Cd", "Csd"] },
 ];
 
+import type { Contract } from "@/domain/types";
+export const CONTRACTS: Contract[] = [
+  { id: "CON-01", entityId: "ENT-01", counterparty: "Adani Airports — LBIA", type: "Work Order", start: "2024-04-01", end: "2027-03-31", scope: "Ramp & baggage handling", status: "active" },
+  { id: "CON-02", entityId: "ENT-01", counterparty: "IndiGo (InterGlobe)", type: "LOA", start: "2025-01-01", end: "2026-08-31", scope: "Below-wing ground handling", status: "active" },
+  { id: "CON-03", entityId: "ENT-03", counterparty: "Adani Airports — LBIA", type: "PO", start: "2024-06-01", end: "2026-05-31", scope: "Flight catering", status: "active" },
+  { id: "CON-04", entityId: "ENT-05", counterparty: "Blue Dart Express", type: "LOI", start: "2025-01-01", end: "2026-12-31", scope: "Cargo handling", status: "active" },
+];
+
 export interface Committee { id: string; date: string; chair: string; members: string; applicationIds: string[]; }
 export const COMMITTEES: Committee[] = [
   { id: "CMTE-07", date: "2026-07-09", chair: "RD BCAS (Asst. Director)", members: "CASO/ASG · Airport Director", applicationIds: ["APP-2256"] },

@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FileStack, CalendarClock, Building2, ShieldAlert,
-  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, ListChecks, Timer, ClipboardCheck, type LucideIcon,
+  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, ListChecks, Timer, ClipboardCheck, FileSignature, type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/domain/types";
 
@@ -20,6 +20,7 @@ const ALL: Record<string, NavItem> = {
   checklist: { to: "/app/checklist", label: "Checklists", icon: ListChecks },
   committees: { to: "/app/committees", label: "Committee agenda", icon: CalendarClock },
   entities: { to: "/app/entities", label: "Entity onboarding", icon: Building2 },
+  contracts: { to: "/app/contracts", label: "Contracts", icon: FileSignature },
   zones: { to: "/app/zones", label: "Zones & escalation", icon: Map },
   zoneaccess: { to: "/app/zone-access", label: "Zone access DB", icon: Map },
   penalties: { to: "/app/penalties", label: "Surrenders · penalties", icon: ShieldAlert },
@@ -33,11 +34,11 @@ const ALL: Record<string, NavItem> = {
 };
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.access, ALL.audit],
-  bcas: [ALL.dashboard, ALL.applications, ALL.checklist, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.audit],
-  operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.status, ALL.zoneaccess, ALL.validity, ALL.users, ALL.penalties],
+  admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.access, ALL.audit],
+  bcas: [ALL.dashboard, ALL.applications, ALL.checklist, ALL.contracts, ALL.status, ALL.zones, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.users, ALL.audit],
+  operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.committees, ALL.entities, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.users, ALL.penalties],
   cisf: [ALL.verify],
-  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.entities, ALL.zones, ALL.profile],
-  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.profile],
+  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.entities, ALL.contracts, ALL.zones, ALL.profile],
+  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.checklist, ALL.contracts, ALL.profile],
   individual: [ALL.dashboard, ALL.applications, ALL.checklist],
 };

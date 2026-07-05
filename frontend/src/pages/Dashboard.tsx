@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FileStack, Clock3, MessageSquareWarning, CalendarClock, TimerReset, Ban, AlertTriangle, Radio } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useSettings, visiblePillars } from "@/app/settings";
 import { useData } from "@/app/data";
 import { ROLE_LABEL } from "@/domain/roles";
 import { expiringWithin, pillarMix, stateCounts } from "@/lib/api";
+import { slaHealth } from "@/domain/sla";
 import { KpiTile } from "@/components/ui";
 import { PillarMixBars, StateBars } from "@/components/charts";
 import ApplicationRegister from "@/components/ApplicationRegister";
@@ -12,11 +14,10 @@ import ApplicationRegister from "@/components/ApplicationRegister";
 export default function Dashboard() {
   const { session } = useAuth();
   const { policy } = useSettings();
-  const { applications: apps, entities } = useData();
+  const { applications: apps, entities, audit } = useData();
+  const nav = useNavigate();
   const [filter, setFilter] = useState<string | null>(null);
 
-  // Scope by role: entity/individual/others see only their own entity; BCAS is
-  // limited to the pass pillars Admin has granted (default Man + Vehicle).
   const scoped = useMemo(() => {
     if (!session) return [];
     const allowed = visiblePillars(session.role, policy);
@@ -34,88 +35,89 @@ export default function Dashboard() {
   const suspended = entities.filter((e) => e.status !== "active").length;
   const expiring = expiringWithin(scoped, 30).length;
 
+  // Real SLA health (replaces the old fabricated "readiness" score).
+  const sla = { on_track: 0, at_risk: 0, breached: 0 } as Record<string, number>;
+  scoped.forEach((a) => { sla[slaHealth(a.status)]++; });
+  const slaTotal = Math.max(1, scoped.length);
+
+  const go = (qs: string) => nav(`/app/applications?${qs}`);
+
   const tiles = [
-    { icon: <FileStack size={18} />, label: "Applications (scope)", value: scoped.length, accent: "var(--brand)", delta: { dir: "up" as const, text: "+4 w-o-w" } },
-    { icon: <Clock3 size={18} />, label: "Checklist pending", value: states.find((s) => s.key === "checklist_pending")?.count ?? 0, accent: "var(--teal)" },
-    { icon: <MessageSquareWarning size={18} />, label: "Sent for clarification", value: states.find((s) => s.key === "clarification")?.count ?? 0, accent: "var(--amber-d)" },
-    { icon: <CalendarClock size={18} />, label: "Committee-scheduled", value: states.find((s) => s.key === "committee_scheduled")?.count ?? 0, accent: "var(--violet)" },
-    { icon: <TimerReset size={18} />, label: "Expiring ≤ 30 days", value: expiring, accent: "var(--green)" },
-    { icon: <Ban size={18} />, label: "Suspended / archived", value: suspended, accent: "var(--red)" },
-    { icon: <AlertTriangle size={18} />, label: "Late surrenders", value: 2, accent: "var(--red)" },
+    { icon: <FileStack size={18} />, label: "Applications (scope)", value: scoped.length, accent: "var(--brand)", to: "" },
+    { icon: <Clock3 size={18} />, label: "Checklist pending", value: states.find((s) => s.key === "checklist_pending")?.count ?? 0, accent: "var(--teal)", to: "stage=checklist_pending" },
+    { icon: <MessageSquareWarning size={18} />, label: "Sent for clarification", value: states.find((s) => s.key === "clarification")?.count ?? 0, accent: "var(--amber-d)", to: "stage=clarification" },
+    { icon: <CalendarClock size={18} />, label: "Committee-scheduled", value: states.find((s) => s.key === "committee_scheduled")?.count ?? 0, accent: "var(--violet)", to: "stage=committee_scheduled" },
+    { icon: <TimerReset size={18} />, label: "Expiring ≤ 30 days", value: expiring, accent: "var(--green)", to: "" },
+    { icon: <Ban size={18} />, label: "Suspended / archived", value: suspended, accent: "var(--red)", to: "" },
+    { icon: <AlertTriangle size={18} />, label: "Late surrenders", value: 2, accent: "var(--red)", to: "" },
   ];
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
-          <h2>Flight deck</h2>
-          <p className="muted">{ROLE_LABEL[session!.role]} — every mandatory field & gate carries its governing clause.</p>
+          <h2>Dashboard</h2>
+          <p className="muted">{ROLE_LABEL[session!.role]} — live counts across your scope. Click any tile, bar or row to drill in. All times in IST.</p>
         </div>
         <span className="pill tone-green pill-dot">Audit trail on</span>
       </div>
 
       <div className="kpi-grid stagger">
-        {tiles.map((t) => <KpiTile key={t.label} {...t} />)}
+        {tiles.map((t) => (
+          <div key={t.label} onClick={() => t.to !== undefined && go(t.to)} className="kpi-link">
+            <KpiTile icon={t.icon} label={t.label} value={t.value} accent={t.accent} />
+          </div>
+        ))}
       </div>
 
       <div className="dash-grid">
         <section className="card card-pad">
           <div className="card-head">
-            <span className="section-title">Applications by state</span>
-            <span className="muted" style={{ fontSize: 12 }}>Click a bar to filter the register</span>
+            <span className="section-title">Applications by stage</span>
+            <span className="muted" style={{ fontSize: 12 }}>How many passes sit at each step — click a bar to filter below</span>
           </div>
           <StateBars data={states} selected={filter} onSelect={(k) => setFilter((f) => (f === k ? null : k))} />
         </section>
 
         <section className="card card-pad">
           <div className="card-head">
-            <span className="section-title">Pillar mix</span>
-            <span className="muted" style={{ fontSize: 12 }}>MAN · MATERIAL · VEHICLE</span>
+            <span className="section-title">Passes by pillar</span>
+            <span className="muted" style={{ fontSize: 12 }}>Man · Material · Vehicle — click to open that pillar</span>
           </div>
-          <PillarMixBars data={mix} />
-          <p className="muted pmix-note">One entity registration feeds all three pillars — Man&nbsp;[§5·§10·§11] · Material&nbsp;[§12B] · Vehicle&nbsp;[§12A].</p>
+          <PillarMixBars data={mix} onSelect={(p) => go(`pillar=${p}`)} />
+          <p className="muted pmix-note">The three families of passes off one entity registration. Click a bar to see them in Applications, where you can filter by zone, stage and date.</p>
         </section>
       </div>
 
       <div className="dash-grid">
         <section className="card card-pad">
           <div className="card-head">
-            <span className="section-title">Airport readiness</span>
-            <span className="pill tone-green pill-dot">On track</span>
-          </div>
-          <div className="readiness-head">
-            <span className="serif readiness-score">87<small>%</small></span>
-            <span className="muted" style={{ fontSize: 12 }}>SLA-weighted posture across all pillars</span>
+            <span className="section-title">SLA health</span>
+            <span className="muted" style={{ fontSize: 12 }}>Tracking against §8.3.3.11 processing SLAs</span>
           </div>
           <div className="readiness-bars">
             {[
-              { label: "MAN · AEP turnaround", pct: 88, tone: "var(--green-700)" },
-              { label: "MATERIAL · ToT", pct: 74, tone: "var(--amber-500)" },
-              { label: "VEHICLE · VEP", pct: 95, tone: "var(--green-700)" },
+              { label: "On track", n: sla.on_track, tone: "var(--green-700)" },
+              { label: "At risk", n: sla.at_risk, tone: "var(--amber-500)" },
+              { label: "Breached", n: sla.breached, tone: "var(--red-500)" },
             ].map((r) => (
               <div className="rd-row" key={r.label}>
                 <span className="rd-label">{r.label}</span>
-                <span className="rd-track"><span className="rd-fill" style={{ width: `${r.pct}%`, background: r.tone }} /></span>
-                <span className="rd-pct">{r.pct}%</span>
+                <span className="rd-track"><span className="rd-fill" style={{ width: `${(r.n / slaTotal) * 100}%`, background: r.tone }} /></span>
+                <span className="rd-pct">{r.n}</span>
               </div>
             ))}
           </div>
+          <p className="muted" style={{ fontSize: 11.5, marginTop: 12 }}>A breached SLA requires a written justification on the pass (recorded &amp; audit-logged).</p>
         </section>
 
         <section className="card audit-card">
-          <div className="audit-head"><Radio size={13} /> AUDIT · TRAIL</div>
+          <div className="audit-head"><Radio size={13} /> AUDIT · TRAIL <span className="audit-live">live</span></div>
           <div className="audit-log mono">
-            {[
-              ["09:41Z", "AEP register synced — 2,140 holders", "ok"],
-              ["10:14Z", "ToT card TOT-0912 issued · zone P", "ok"],
-              ["11:02Z", "APP-2240 sent to clarification · SLA 2 WD", "warn"],
-              ["11:30Z", "Committee scheduled · fortnightly cadence", "ok"],
-              ["11:47Z", "APP-2244 late-surrender flag raised", "bad"],
-              ["12:03Z", "Auto-scan complete · 11 applications", "ok"],
-            ].map(([t, msg, tone]) => (
-              <div className="audit-line" key={t as string}>
-                <span className="audit-t">{t}</span>
-                <span className={`audit-msg ${tone}`}>{msg}</span>
+            {audit.slice(0, 7).map((e, i) => (
+              <div className="audit-line" key={i}>
+                <span className="audit-t">{e.ts.slice(11) || e.ts}</span>
+                <span className={`audit-msg ${e.tone}`}>{e.actor}: {e.action} {e.object} — {e.detail}</span>
               </div>
             ))}
           </div>
@@ -124,10 +126,10 @@ export default function Dashboard() {
 
       <section className="card">
         <div className="card-head card-pad" style={{ paddingBottom: 0 }}>
-          <span className="section-title">Application register {filter && <span className="muted">· filtered: {filter.replace("_", "-")}</span>}</span>
+          <span className="section-title">Application register {filter && <span className="muted">· stage: {filter.replace("_", "-")}</span>}</span>
           <span className="pill tone-slate">Scoped to role</span>
         </div>
-        <ApplicationRegister apps={shown} entities={entities} />
+        <ApplicationRegister apps={shown} entities={entities} showTime />
       </section>
     </div>
   );

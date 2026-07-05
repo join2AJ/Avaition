@@ -14,7 +14,7 @@ export interface NavItem {
 // Role-scoped navigation. Shared destinations appear for each role at the
 // depth that role reaches them (per the wireframe sitemap, §1).
 const ALL: Record<string, NavItem> = {
-  dashboard: { to: "/app", label: "Flight deck", icon: LayoutDashboard },
+  dashboard: { to: "/app", label: "Dashboard", icon: LayoutDashboard },
   create: { to: "/app/create", label: "Create", icon: PlusCircle },
   applications: { to: "/app/applications", label: "Applications", icon: FileStack },
   committees: { to: "/app/committees", label: "Committee agenda", icon: CalendarClock },

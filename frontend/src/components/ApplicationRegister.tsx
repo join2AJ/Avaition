@@ -6,9 +6,9 @@ import { entityName } from "@/lib/api";
 import { Pill, PillarBadge, ZoneChips } from "./ui";
 
 export default function ApplicationRegister({
-  apps, entities, limit, linkBase = "/app/applications",
+  apps, entities, limit, linkBase = "/app/applications", showTime = false,
 }: {
-  apps: Application[]; entities: Entity[]; limit?: number; linkBase?: string;
+  apps: Application[]; entities: Entity[]; limit?: number; linkBase?: string; showTime?: boolean;
 }) {
   const rows = limit ? apps.slice(0, limit) : apps;
   return (
@@ -17,7 +17,10 @@ export default function ApplicationRegister({
         const st = STATUS_META[a.status];
         return (
           <Link to={`${linkBase}/${a.id}`} key={a.id} className="reg-row">
-            <span className="reg-id mono">{a.id}</span>
+            <span className="reg-id-cell">
+              <span className="reg-id mono">{a.id}</span>
+              {showTime && <span className="reg-time mono">{a.createdAtTs ?? a.createdAt}</span>}
+            </span>
             <PillarBadge pillar={a.pillar} />
             <span className="reg-subject">{a.subject}</span>
             <span className="reg-entity muted">{entityName(a.entityId, entities)}</span>
@@ -28,7 +31,7 @@ export default function ApplicationRegister({
           </Link>
         );
       })}
-      {rows.length === 0 && <div className="reg-empty muted">No applications in scope.</div>}
+      {rows.length === 0 && <div className="reg-empty muted">No applications match these filters.</div>}
     </div>
   );
 }

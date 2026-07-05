@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Bell, LogOut, Moon, Plane, Search, Sun, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useAuth } from "@/app/auth";
@@ -12,6 +12,23 @@ export default function Shell({ children }: { children: ReactNode }) {
   const { theme, toggle } = useTheme();
   const nav = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [q, setQ] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // ⌘K / Ctrl-K focuses the search from anywhere.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); searchRef.current?.focus(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const runSearch = () => {
+    if (!q.trim()) return;
+    nav(`/app/applications?q=${encodeURIComponent(q.trim())}`);
+  };
+
   if (!session) return null;
   const items = NAV_BY_ROLE[session.role];
 
@@ -57,7 +74,9 @@ export default function Shell({ children }: { children: ReactNode }) {
           </button>
           <div className="topbar-search">
             <Search size={15} />
-            <input placeholder="Search applications, entities, zones…" />
+            <input ref={searchRef} value={q} placeholder="Search applications, entities, zones…"
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") runSearch(); if (e.key === "Escape") setQ(""); }} />
             <kbd>⌘K</kbd>
           </div>
           <div className="pillar-legend">

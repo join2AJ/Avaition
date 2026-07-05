@@ -43,8 +43,8 @@ export function StateBars({
   );
 }
 
-/** Horizontal bars — "Pillar mix" MAN / MATERIAL / VEHICLE. */
-export function PillarMixBars({ data }: { data: { pillar: Pillar; count: number }[] }) {
+/** Horizontal bars — "Passes by pillar" MAN / MATERIAL / VEHICLE. */
+export function PillarMixBars({ data, onSelect }: { data: { pillar: Pillar; count: number }[]; onSelect?: (p: Pillar) => void }) {
   const total = Math.max(1, data.reduce((s, d) => s + d.count, 0));
   const color: Record<Pillar, string> = {
     MAN: "var(--pillar-man)", MATERIAL: "var(--pillar-material)", VEHICLE: "var(--pillar-vehicle)",
@@ -54,7 +54,7 @@ export function PillarMixBars({ data }: { data: { pillar: Pillar; count: number 
       {data.map((d) => {
         const meta = PILLARS.find((p) => p.key === d.pillar)!;
         return (
-          <div className="pmix-row" key={d.pillar}>
+          <button className="pmix-row" key={d.pillar} onClick={() => onSelect?.(d.pillar)} style={{ cursor: onSelect ? "pointer" : "default" }}>
             <span className="pmix-label">
               <b>{d.pillar}</b> <span className="muted mono">{meta.pass}</span>
             </span>
@@ -62,7 +62,7 @@ export function PillarMixBars({ data }: { data: { pillar: Pillar; count: number 
               <span className="pmix-fill" style={{ width: `${(d.count / total) * 100}%`, background: color[d.pillar] }} />
             </span>
             <span className="pmix-count">{d.count}</span>
-          </div>
+          </button>
         );
       })}
     </div>

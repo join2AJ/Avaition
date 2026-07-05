@@ -132,6 +132,27 @@
 .audit-msg.warn { color: #f0c274; }
 .audit-msg.bad { color: #f4a0a0; }
 
+/* ===== Applications tabs + filter bar =================================== */
+.app-tabs { display: flex; gap: 8px; }
+.app-tab { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-hairline); background: var(--surface-card); font-size: 13.5px; font-weight: 600; color: var(--text-secondary); transition: var(--transition); }
+.app-tab.active { background: var(--navy-500); color: #fff; border-color: var(--navy-500); }
+.app-tab-n { font-size: 11px; background: var(--surface-sunken); color: var(--text-secondary); padding: 0 7px; border-radius: 999px; min-width: 20px; text-align: center; }
+.app-tab.active .app-tab-n { background: rgba(255,255,255,0.2); color: #fff; }
+.filter-bar { display: flex; flex-direction: column; gap: 12px; }
+.filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+.filter-lead { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+.field.mini { width: auto; padding: 7px 10px; font-size: 12.5px; }
+.field.mini.grow { flex: 1; min-width: 160px; }
+.filter-date { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+.mini-btn { padding: 7px 12px; font-size: 12.5px; }
+.filter-result { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-secondary); flex-wrap: wrap; }
+.filter-result b { color: var(--text-strong); font-size: 14px; }
+.chip-f { font-size: 11px; font-weight: 600; background: var(--blue-100); color: var(--navy-500); padding: 2px 8px; border-radius: 999px; }
+.kpi-link { cursor: pointer; }
+.reg-id-cell { display: flex; flex-direction: column; gap: 2px; }
+.reg-time { font-size: 10px; color: var(--text-muted); }
+.audit-live { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; background: var(--green-500); color: #04120b; padding: 1px 6px; border-radius: 999px; margin-left: auto; }
+
 /* ===== Application register ============================================== */
 .register { display: flex; flex-direction: column; }
 .reg-row {

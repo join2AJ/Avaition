@@ -1,14 +1,19 @@
 import { useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, MapPin, Layers } from "lucide-react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Building2, MapPin, Layers, Filter, X } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useSettings, visiblePillars } from "@/app/settings";
 import { useData } from "@/app/data";
 import { entityName } from "@/lib/api";
-import { STATUS_META } from "@/domain/status";
+import { STATUS_META, STATE_ORDER } from "@/domain/status";
+import { ZONES } from "@/domain/zones";
+import { applyFilter, type AppFilter } from "@/domain/filter";
+import type { Pillar } from "@/domain/types";
 import { Pill, PillarBadge, ZoneChips, ClauseBadge } from "@/components/ui";
 import ApplicationRegister from "@/components/ApplicationRegister";
 import SlaStepper from "@/components/SlaStepper";
+
+const PASS_TYPES_ALL = ["BAEP", "TAEP", "VAT", "Permanent", "ToT", "VEP", "VAP", "ADP"];
 
 export default function Applications() {
   const { session } = useAuth();
@@ -70,20 +75,92 @@ export default function Applications() {
     );
   }
 
+  return <ApplicationsList scoped={scoped} allowed={allowed} entities={entities} role={session!.role} />;
+}
+
+function ApplicationsList({ scoped, allowed, entities, role }: {
+  scoped: import("@/domain/types").Application[];
+  allowed: Pillar[]; entities: import("@/domain/types").Entity[]; role: string;
+}) {
+  // URL is the single source of truth so search, tabs, dashboard links and
+  // manual filters all stay consistent and are shareable/bookmarkable.
+  const [params, setParams] = useSearchParams();
+  const nameOf = (id: string) => entityName(id, entities);
+
+  const pillar = (params.get("pillar") as Pillar | "ALL") || "ALL";
+  const filter: AppFilter = {
+    zone: params.get("zone") || undefined,
+    stage: params.get("stage") || undefined,
+    passType: params.get("passType") || undefined,
+    from: params.get("from") || undefined,
+    to: params.get("to") || undefined,
+    q: params.get("q") || undefined,
+  };
+  const patch = (k: string, v: string) => {
+    const n = new URLSearchParams(params);
+    v ? n.set(k, v) : n.delete(k);
+    setParams(n, { replace: true });
+  };
+  const set = (k: keyof AppFilter, v: string) => patch(k, v);
+  const setPillar = (p: Pillar | "ALL") => patch("pillar", p === "ALL" ? "" : p);
+  const clear = () => setParams(new URLSearchParams(pillar === "ALL" ? {} : { pillar }), { replace: true });
+
+  const tabs: (Pillar | "ALL")[] = ["ALL", ...(["MAN", "MATERIAL", "VEHICLE"] as Pillar[]).filter((p) => allowed.includes(p))];
+  const countFor = (p: Pillar | "ALL") => applyFilter(scoped, { ...filter, pillar: p }, nameOf).length;
+  const rows = applyFilter(scoped, { ...filter, pillar }, nameOf);
+  const activeCount = Object.values(filter).filter(Boolean).length;
+
   return (
     <div className="page">
       <div className="page-head">
         <div>
           <h2>Applications</h2>
-          <p className="muted">
-            {scoped.length} in scope · click any row to open its lifecycle & SLA
-            {session!.role === "bcas" && <span> · BCAS scope: {allowed.join(" · ")}</span>}
-          </p>
+          <p className="muted">Three pillars · filter by zone, stage, pass type and date. Click any row for its lifecycle &amp; SLA · all timestamps in IST.</p>
         </div>
       </div>
-      <section className="card">
-        <ApplicationRegister apps={scoped} entities={entities} linkBase="/app/applications" />
+
+      <div className="app-tabs">
+        {tabs.map((t) => (
+          <button key={t} className={`app-tab ${pillar === t ? "active" : ""}`} onClick={() => setPillar(t)}>
+            {t === "ALL" ? "All" : t.charAt(0) + t.slice(1).toLowerCase()}
+            <span className="app-tab-n">{countFor(t)}</span>
+          </button>
+        ))}
+      </div>
+
+      <section className="card card-pad filter-bar">
+        <div className="filter-row">
+          <span className="filter-lead"><Filter size={14} /> Filters</span>
+          <select className="field mini" value={filter.zone || ""} onChange={(e) => set("zone", e.target.value)}>
+            <option value="">Any zone</option>
+            {ZONES.map((z) => <option key={z.code} value={z.code}>{z.code} · {z.label}</option>)}
+          </select>
+          <select className="field mini" value={filter.stage || ""} onChange={(e) => set("stage", e.target.value)}>
+            <option value="">Any stage</option>
+            {STATE_ORDER.map((s) => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
+          </select>
+          <select className="field mini" value={filter.passType || ""} onChange={(e) => set("passType", e.target.value)}>
+            <option value="">Any pass type</option>
+            {PASS_TYPES_ALL.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <label className="filter-date">From <input type="date" className="field mini" value={filter.from || ""} onChange={(e) => set("from", e.target.value)} /></label>
+          <label className="filter-date">To <input type="date" className="field mini" value={filter.to || ""} onChange={(e) => set("to", e.target.value)} /></label>
+          <input className="field mini grow" placeholder="Search id / name / entity…" value={filter.q || ""} onChange={(e) => set("q", e.target.value)} />
+          {activeCount > 0 && <button className="btn btn-ghost mini-btn" onClick={clear}><X size={13} /> Clear</button>}
+        </div>
+        <div className="filter-result">
+          <b>{rows.length}</b> result{rows.length === 1 ? "" : "s"}
+          {filter.zone && <span className="chip-f">zone {filter.zone}</span>}
+          {filter.stage && <span className="chip-f">{STATUS_META[filter.stage as keyof typeof STATUS_META]?.label}</span>}
+          {filter.passType && <span className="chip-f">{filter.passType}</span>}
+          {(filter.from || filter.to) && <span className="chip-f">{filter.from || "…"} → {filter.to || "…"}</span>}
+        </div>
       </section>
+
+      <section className="card">
+        <ApplicationRegister apps={rows} entities={entities} linkBase="/app/applications" showTime />
+      </section>
+      {role === "bcas" && <p className="muted" style={{ fontSize: 12 }}>BCAS scope: {allowed.join(" · ")} passes.</p>}
     </div>
   );
 }

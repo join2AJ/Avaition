@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, MapPin, Layers } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useSettings, visiblePillars } from "@/app/settings";
-import type { Application, Entity } from "@/domain/types";
-import { api, entityName } from "@/lib/api";
+import { useData } from "@/app/data";
+import { entityName } from "@/lib/api";
 import { STATUS_META } from "@/domain/status";
 import { Pill, PillarBadge, ZoneChips, ClauseBadge } from "@/components/ui";
 import ApplicationRegister from "@/components/ApplicationRegister";
@@ -13,15 +13,9 @@ import SlaStepper from "@/components/SlaStepper";
 export default function Applications() {
   const { session } = useAuth();
   const { policy } = useSettings();
+  const { applications: apps, entities } = useData();
   const { id } = useParams();
   const nav = useNavigate();
-  const [apps, setApps] = useState<Application[]>([]);
-  const [entities, setEntities] = useState<Entity[]>([]);
-
-  useEffect(() => {
-    api.listApplications().then(setApps);
-    api.listEntities().then(setEntities);
-  }, []);
 
   const allowed = visiblePillars(session!.role, policy);
   const scoped = useMemo(() => {

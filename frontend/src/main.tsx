@@ -5,6 +5,7 @@ import App from "./App";
 import { ThemeProvider } from "./app/theme";
 import { AuthProvider } from "./app/auth";
 import { SettingsProvider } from "./app/settings";
+import { DataProvider } from "./app/data";
 import "./styles/global.css";
 
 createRoot(document.getElementById("root")!).render(
@@ -12,9 +13,11 @@ createRoot(document.getElementById("root")!).render(
     <ThemeProvider>
       <AuthProvider>
         <SettingsProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
+          <DataProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </DataProvider>
         </SettingsProvider>
       </AuthProvider>
     </ThemeProvider>

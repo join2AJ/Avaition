@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FileStack, CalendarClock, Building2, ShieldAlert,
-  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, type LucideIcon,
+  IdCard, Users, Map, ScrollText, ScanSearch, SlidersHorizontal, PlusCircle, type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/domain/types";
 
@@ -15,6 +15,7 @@ export interface NavItem {
 // depth that role reaches them (per the wireframe sitemap, §1).
 const ALL: Record<string, NavItem> = {
   dashboard: { to: "/app", label: "Flight deck", icon: LayoutDashboard },
+  create: { to: "/app/create", label: "Create", icon: PlusCircle },
   applications: { to: "/app/applications", label: "Applications", icon: FileStack },
   committees: { to: "/app/committees", label: "Committee agenda", icon: CalendarClock },
   entities: { to: "/app/entities", label: "Entity onboarding", icon: Building2 },
@@ -28,11 +29,11 @@ const ALL: Record<string, NavItem> = {
 };
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.applications, ALL.committees, ALL.entities, ALL.zones, ALL.penalties, ALL.users, ALL.access, ALL.audit],
+  admin: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.zones, ALL.penalties, ALL.users, ALL.access, ALL.audit],
   bcas: [ALL.dashboard, ALL.applications, ALL.zones, ALL.penalties, ALL.audit],
-  operator: [ALL.dashboard, ALL.applications, ALL.committees, ALL.entities, ALL.penalties],
+  operator: [ALL.dashboard, ALL.create, ALL.applications, ALL.committees, ALL.entities, ALL.penalties],
   cisf: [ALL.verify],
-  entity: [ALL.dashboard, ALL.applications, ALL.zones, ALL.profile],
-  others: [ALL.dashboard, ALL.applications, ALL.profile],
+  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.zones, ALL.profile],
+  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.profile],
   individual: [ALL.dashboard, ALL.applications],
 };

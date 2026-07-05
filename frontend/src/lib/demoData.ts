@@ -59,14 +59,20 @@ export const SURRENDERS: Surrender[] = [
   { id: "SUR-12", applicationId: "APP-2259", holder: "A. Reddy", entityId: "ENT-05", reason: "expired", exitDate: "2026-07-01", dueDate: "2026-07-08", daysLate: 3, penaltyStatus: undefined },
 ];
 
-export interface AuditEntry { ts: string; actor: string; action: string; object: string; detail: string; tone: "ok" | "warn" | "bad"; }
+// Audit is login-wise: every entry records the actor (login) and their login
+// category (role) so Admin can view the full trail or filter by category.
+export interface AuditEntry {
+  ts: string; actor: string; role: string; action: string; object: string; detail: string; tone: "ok" | "warn" | "bad";
+}
 export const AUDIT: AuditEntry[] = [
-  { ts: "2026-07-05 09:41", actor: "system", action: "sync", object: "AEP register", detail: "2,140 holders reconciled", tone: "ok" },
-  { ts: "2026-07-05 10:14", actor: "Pass Section", action: "issue", object: "TOT-0912", detail: "ToT card issued · zone P", tone: "ok" },
-  { ts: "2026-07-05 11:02", actor: "Pass Section", action: "send_to_clarification", object: "APP-2240", detail: "BGC older than 3 months · SLA 2 WD", tone: "warn" },
-  { ts: "2026-07-05 11:30", actor: "Pass Section", action: "schedule_committee", object: "APP-2256", detail: "CMTE-07 · 2026-07-09", tone: "ok" },
-  { ts: "2026-07-05 11:47", actor: "BCAS", action: "late_surrender_flag", object: "APP-2244", detail: "9 days late · entity notified", tone: "bad" },
-  { ts: "2026-07-05 12:03", actor: "Admin", action: "access_policy", object: "BCAS pillars", detail: "MATERIAL kept hidden", tone: "ok" },
+  { ts: "2026-07-05 09:41", actor: "system", role: "system", action: "sync", object: "AEP register", detail: "2,140 holders reconciled", tone: "ok" },
+  { ts: "2026-07-05 10:14", actor: "Pass Section Staff", role: "operator", action: "issue", object: "TOT-0912", detail: "ToT card issued · zone P", tone: "ok" },
+  { ts: "2026-07-05 11:02", actor: "Pass Section Staff", role: "operator", action: "send_to_clarification", object: "APP-2240", detail: "BGC older than 3 months · SLA 2 WD", tone: "warn" },
+  { ts: "2026-07-05 11:30", actor: "Pass Section Staff", role: "operator", action: "schedule_committee", object: "APP-2256", detail: "CMTE-07 · 2026-07-09", tone: "ok" },
+  { ts: "2026-07-05 11:47", actor: "BCAS Officer", role: "bcas", action: "late_surrender_flag", object: "APP-2244", detail: "9 days late · entity notified", tone: "bad" },
+  { ts: "2026-07-05 12:03", actor: "Portal Administrator", role: "admin", action: "access_policy", object: "BCAS pillars", detail: "MATERIAL kept hidden", tone: "ok" },
+  { ts: "2026-07-05 12:20", actor: "CISF Gate Officer", role: "cisf", action: "verify", object: "APP-2258", detail: "VEP verified at gate · match", tone: "ok" },
+  { ts: "2026-07-05 12:35", actor: "GHA-Delta Ground Services", role: "entity", action: "create_application", object: "APP-2247", detail: "MATERIAL · ToT raised", tone: "ok" },
 ];
 
 export const APPLICATIONS: Application[] = [

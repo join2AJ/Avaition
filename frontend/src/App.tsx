@@ -4,6 +4,7 @@ import Shell from "./components/Shell";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
+import Create from "./pages/Create";
 import Verify from "./pages/Verify";
 import AccessControl from "./pages/AccessControl";
 import Committees from "./pages/Committees";
@@ -32,6 +33,7 @@ export default function App() {
             <Shell>
               <Routes>
                 <Route index element={session?.role === "cisf" ? <Navigate to="/app/verify" replace /> : <Dashboard />} />
+                <Route path="create" element={<Create />} />
                 <Route path="applications" element={<Applications />} />
                 <Route path="applications/:id" element={<Applications />} />
                 <Route path="verify" element={<Verify />} />

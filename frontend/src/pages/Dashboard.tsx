@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FileStack, Clock3, MessageSquareWarning, CalendarClock, TimerReset, Ban, AlertTriangle, Radio } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useSettings, visiblePillars } from "@/app/settings";
+import { useData } from "@/app/data";
 import { ROLE_LABEL } from "@/domain/roles";
-import type { Application, Entity } from "@/domain/types";
-import { api, expiringWithin, pillarMix, stateCounts } from "@/lib/api";
+import { expiringWithin, pillarMix, stateCounts } from "@/lib/api";
 import { KpiTile } from "@/components/ui";
 import { PillarMixBars, StateBars } from "@/components/charts";
 import ApplicationRegister from "@/components/ApplicationRegister";
@@ -12,14 +12,8 @@ import ApplicationRegister from "@/components/ApplicationRegister";
 export default function Dashboard() {
   const { session } = useAuth();
   const { policy } = useSettings();
-  const [apps, setApps] = useState<Application[]>([]);
-  const [entities, setEntities] = useState<Entity[]>([]);
+  const { applications: apps, entities } = useData();
   const [filter, setFilter] = useState<string | null>(null);
-
-  useEffect(() => {
-    api.listApplications().then(setApps);
-    api.listEntities().then(setEntities);
-  }, []);
 
   // Scope by role: entity/individual/others see only their own entity; BCAS is
   // limited to the pass pillars Admin has granted (default Man + Vehicle).

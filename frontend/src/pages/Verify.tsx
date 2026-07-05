@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ScanSearch, Building2, MapPin, CheckCircle2, XCircle, Layers } from "lucide-react";
-import type { Application, Entity } from "@/domain/types";
-import { api, entityName } from "@/lib/api";
+import type { Application } from "@/domain/types";
+import { useData } from "@/app/data";
+import { entityName } from "@/lib/api";
 import { STATUS_META } from "@/domain/status";
 import { Pill, PillarBadge, ZoneChips, ClauseBadge } from "@/components/ui";
 
@@ -9,15 +10,9 @@ import { Pill, PillarBadge, ZoneChips, ClauseBadge } from "@/components/ui";
 // (AEP / protocol / ToT / VEP-ADP) and confirms the on-screen record against
 // the physical card in the holder's hand. No dashboard, no editing.
 export default function Verify() {
-  const [apps, setApps] = useState<Application[]>([]);
-  const [entities, setEntities] = useState<Entity[]>([]);
+  const { applications: apps, entities, log } = useData();
   const [q, setQ] = useState("");
   const [result, setResult] = useState<Application | null | undefined>(undefined);
-
-  useEffect(() => {
-    api.listApplications().then(setApps);
-    api.listEntities().then(setEntities);
-  }, []);
 
   const search = () => {
     const needle = q.trim().toLowerCase();
@@ -26,6 +21,8 @@ export default function Verify() {
       (a) => a.id.toLowerCase() === needle || a.id.toLowerCase().includes(needle) || a.subject.toLowerCase().includes(needle),
     );
     setResult(hit ?? null);
+    if (hit) log("verify", hit.id, `${hit.pillar} ${hit.passType} verified at gate`, hit.status === "issued" ? "ok" : "warn");
+    else log("verify_miss", q.trim() || "—", "No record found at gate", "bad");
   };
 
   const valid = result && (result.status === "issued" || result.status === "approved");

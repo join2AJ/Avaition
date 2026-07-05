@@ -1,0 +1,154 @@
+/* ===========================================================================
+   AEP Portal — design system
+   Premium, card-based, theme-aware (light default + dark). Navy sidebar,
+   soft cards, KPI tiles with trend chips, status pills, data tables.
+   =========================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* neutrals */
+  --paper: #f4f6fb;
+  --card: #ffffff;
+  --ink: #10161f;
+  --ink-2: #1e2733;
+  --slate: #5a6675;
+  --mute: #8894a4;
+  --line: #e7ebf2;
+  --line-2: #d7deea;
+
+  /* brand + accents */
+  --brand: #2f6bff;
+  --brand-soft: #e8efff;
+  --navy: #0d1b2e;
+  --navy-2: #12243c;
+  --amber: #f5a623;
+  --amber-d: #d98c0a;
+  --teal: #14a0a0;
+  --green: #1a9d5a;
+  --green-soft: #e3f6ec;
+  --red: #d64545;
+  --red-soft: #fbe9e9;
+  --violet: #7a5af5;
+  --violet-soft: #eee9ff;
+  --blue-soft: #e6efff;
+  --amber-soft: #fdf0d9;
+  --teal-soft: #dcf3f3;
+  --slate-soft: #eef1f6;
+
+  /* role accents */
+  --role-admin: #2f6bff;
+  --role-bcas: #d64545;
+  --role-operator: #14a0a0;
+  --role-entity: #1a9d5a;
+  --role-others: #7a5af5;
+
+  /* pillars */
+  --pillar-man: #2f6bff;
+  --pillar-material: #d98c0a;
+  --pillar-vehicle: #14a0a0;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow-sm: 0 1px 2px rgba(16, 22, 31, 0.05);
+  --shadow: 0 6px 22px rgba(16, 22, 31, 0.07);
+  --shadow-lg: 0 18px 48px rgba(16, 22, 31, 0.14);
+  --sidebar-w: 250px;
+}
+
+:root[data-theme="dark"] {
+  --paper: #0a1120;
+  --card: #111c30;
+  --ink: #eef3fb;
+  --ink-2: #dbe4f1;
+  --slate: #9fb0c4;
+  --mute: #6c7d93;
+  --line: #1e2c42;
+  --line-2: #27384f;
+  --brand-soft: #16294b;
+  --blue-soft: #16294b;
+  --amber-soft: #33260f;
+  --teal-soft: #0e2e2e;
+  --green-soft: #0e2e1e;
+  --red-soft: #331717;
+  --violet-soft: #221b3d;
+  --slate-soft: #16202f;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 52px rgba(0, 0, 0, 0.6);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+.mono { font-family: "JetBrains Mono", monospace; }
+
+/* ---- primitives ---------------------------------------------------------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.card-pad { padding: clamp(16px, 2vw, 22px); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  padding: 9px 15px; font-size: 13.5px; font-weight: 600; transition: 0.15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-brand { background: var(--brand); color: #fff; }
+.btn-brand:hover:not(:disabled) { filter: brightness(1.06); }
+.btn-ink { background: var(--ink); color: var(--card); }
+.btn-ghost { background: var(--card); color: var(--ink); border-color: var(--line-2); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--slate); }
+.btn-amber { background: var(--amber); color: #241803; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  letter-spacing: 0.02em; line-height: 1.5;
+}
+.pill-dot::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+}
+.tone-blue { background: var(--blue-soft); color: var(--brand); }
+.tone-amber { background: var(--amber-soft); color: var(--amber-d); }
+.tone-teal { background: var(--teal-soft); color: var(--teal); }
+.tone-green { background: var(--green-soft); color: var(--green); }
+.tone-red { background: var(--red-soft); color: var(--red); }
+.tone-violet { background: var(--violet-soft); color: var(--violet); }
+.tone-slate { background: var(--slate-soft); color: var(--slate); }
+.tone-ink { background: var(--ink); color: var(--card); }
+
+.badge-clause {
+  font-family: "JetBrains Mono", monospace; font-size: 10.5px; font-weight: 500;
+  color: var(--brand); background: var(--brand-soft);
+  padding: 2px 7px; border-radius: 6px; white-space: nowrap;
+}
+
+.field {
+  width: 100%; border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+  padding: 10px 12px; font-size: 14px; font-family: inherit;
+  color: var(--ink); background: var(--card); outline: none; transition: 0.15s;
+}
+.field:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.field::placeholder { color: var(--mute); }
+
+.muted { color: var(--mute); }
+.section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
+
+/* scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 8px; border: 3px solid var(--paper); }

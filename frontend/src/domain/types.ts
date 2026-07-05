@@ -1,0 +1,95 @@
+// ---------------------------------------------------------------------------
+// AEP Portal domain model — mirrors the FastAPI backend and the BCAS AEP
+// Guidelines 2022 (AVSEC Order 02/2022). One Entity registers ONCE and raises
+// applications across all three pillars; every pillar shares that same Entity
+// record, so there is never a second registration for MATERIAL or VEHICLE.
+// ---------------------------------------------------------------------------
+
+/** The three permit pillars. */
+export type Pillar = "MAN" | "MATERIAL" | "VEHICLE";
+
+export const PILLARS: { key: Pillar; roman: string; label: string; pass: string; clause: string }[] = [
+  { key: "MAN", roman: "I", label: "Man", pass: "AEP", clause: "§5 · §10 · §11" },
+  { key: "MATERIAL", roman: "II", label: "Material", pass: "ToT", clause: "§12B" },
+  { key: "VEHICLE", roman: "III", label: "Vehicle", pass: "VEP", clause: "§12A" },
+];
+
+export type Role = "admin" | "operator" | "bcas" | "entity" | "others" | "individual";
+
+export interface RoleMeta {
+  key: Role;
+  title: string;
+  tag: string;
+  accent: string; // css color token name
+  blurb: string;
+}
+
+export type ApplicationStatus =
+  | "draft"
+  | "checklist_pending"
+  | "clarification"
+  | "committee_scheduled"
+  | "approved"
+  | "rejected"
+  | "issued"
+  | "surrendered";
+
+export type EntityStatus = "active" | "suspended" | "archived";
+
+/** Pass types vary by pillar. */
+export type PassType = "BAEP" | "TAEP" | "VAT" | "Permanent" | "ToT" | "VEP";
+
+export interface GuidelineClause {
+  order_no: string;
+  clause: string;
+  sub_clause?: string;
+  description: string;
+}
+
+export interface Entity {
+  id: string;
+  name: string;
+  category: string; // AEP category: GHA, Airline, Caterer, Cargo/CHA, MRO, Govt, Contractor…
+  status: EntityStatus;
+  strength: number; // registered active individuals; >15 unlocks self-service login
+  contractStart: string;
+  contractEnd: string;
+  aopLinked: boolean;
+  entitledZones: string[]; // zone codes granted at onboarding / renewal
+}
+
+export interface Individual {
+  id: string;
+  entityId: string;
+  name: string;
+  jobRole: string;
+  hasLogin: boolean; // entity may authorize a self-check login
+}
+
+/** Polymorphic subject of an application — the shared Entity is always the sponsor. */
+export interface Application {
+  id: string; // APP-2216
+  pillar: Pillar;
+  entityId: string;
+  subject: string; // person name (MAN) / item (MATERIAL) / vehicle (VEHICLE)
+  passType: PassType;
+  zones: string[]; // requested zone codes
+  status: ApplicationStatus;
+  createdBy: string;
+  createdAt: string;
+  expiryDate?: string;
+  clauseRef: string;
+}
+
+export interface ZoneDef {
+  code: string;
+  label: string;
+  sra: boolean; // Security Restricted Area
+}
+
+export interface KpiTile {
+  label: string;
+  value: number | string;
+  accent: string;
+  hint?: string;
+}

@@ -70,6 +70,10 @@ Status: ☐ open · ☑ fixed.
   records a late-surrender justification (§10.7); BCAS raises a penalty with written justification and
   later resolves it (§10.8); each action notifies the counterparty and writes the audit. Days-late is
   computed live against the 7-day due date. Verified end-to-end.
+- ☑ **E6 · S1 — Withdrawal didn't bar re-application.** A pass withdrawn on adverse BGC (§11) left the
+  holder free to be raised again. Now withdrawing a MAN pass auto-adds the holder to the Stop List
+  (source BCAS RO), so the Create screen screens them out on the next attempt (§9). Verified: holder
+  appears on the Stop List immediately after withdrawal.
 
 ## C. Application security
 

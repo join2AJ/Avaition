@@ -399,7 +399,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     else if (to === "approved") notify("operator", "pass_approved", `${app.subject}: ${appId} approved at committee — proceed to issue (§15).`, "ok");
     else if (to === "parked") notify("entity", "pass_parked", `${app.subject}: pass ${appId} parked for non-use${opts?.note ? ` — ${opts.note}` : ""}. Un-park within norms or it lapses (§10.6).`, "warn");
     else if (to === "deactivated") notify("entity", "pass_deactivated", `${app.subject}: pass ${appId} deactivated (compliance hold)${opts?.note ? ` — ${opts.note}` : ""}. Clear the deficiency to reactivate (§10 · §13).`, "warn");
-    else if (to === "withdrawn") { notify("entity", "pass_withdrawn", `${app.subject}: pass ${appId} WITHDRAWN${opts?.note ? ` — ${opts.note}` : ""}. Surrender the card immediately (§11).`, "bad"); notify("bcas", "pass_withdrawn", `${app.subject}: ${appId} withdrawn (§11)${opts?.note ? ` — ${opts.note}` : ""}.`, "bad"); appendSurrenders([surrenderRecord(appId, app.subject, app.entityId, "withdrawn")]); }
+    else if (to === "withdrawn") {
+      notify("entity", "pass_withdrawn", `${app.subject}: pass ${appId} WITHDRAWN${opts?.note ? ` — ${opts.note}` : ""}. Surrender the card immediately (§11).`, "bad");
+      notify("bcas", "pass_withdrawn", `${app.subject}: ${appId} withdrawn (§11)${opts?.note ? ` — ${opts.note}` : ""}.`, "bad");
+      appendSurrenders([surrenderRecord(appId, app.subject, app.entityId, "withdrawn")]);
+      // §9/§11 — a withdrawn AEP holder is barred from re-applying: auto-add to
+      // the Stop List so the Create screen screens them out on the next attempt.
+      if (app.pillar === "MAN" && !isStopListed(app.subject)) {
+        addStopList({ name: app.subject, reason: `AEP withdrawn (§11)${opts?.note ? ` — ${opts.note}` : ""}`, source: "BCAS RO", since: today() });
+      }
+    }
   };
 
   // §13 — AVSEC training lapse suspends access. Any currently-issued MAN pass

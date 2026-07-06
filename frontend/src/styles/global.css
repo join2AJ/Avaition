@@ -78,20 +78,22 @@
 }
 
 :root[data-theme="dark"] {
-  --surface-app: #070f20; --surface-card: #0e1a35; --surface-sunken: #0b1730;
-  --surface-nav: #0a1428; --surface-comm: #0c1830;
-  --text-strong: #f2f6fc; --text-body: #dde6f3; --text-secondary: #aebdd0; --text-muted: #8fa0b8;
-  --border-hairline: #1c2942; --border-strong: #2a3c5c;
-  /* Soft status backgrounds — a touch lighter so pill text reads clearly. */
-  --blue-100: #172c50; --green-100: #103526; --amber-100: #3a2c12; --red-100: #3a1a1a; --violet-100: #271f45; --cyan-100: #113334;
-  --cloud-150: #111f38; --cloud-200: #1c2942; --cloud-300: #2a3c5c;
+  /* Eye-comfort dark: desaturated slate surfaces (no pure black), gentle steps
+     between app/card, soft off-white text (never harsh #fff), calmer accents. */
+  --surface-app: #10161f; --surface-card: #171f2b; --surface-sunken: #131b26;
+  --surface-nav: #121a26; --surface-comm: #141d2a;
+  --text-strong: #e4ebf4; --text-body: #cdd8e6; --text-secondary: #9fb0c4; --text-muted: #8698ae;
+  --border-hairline: #232f3f; --border-strong: #33435a;
+  /* Soft status backgrounds — desaturated so pill text reads clearly without glare. */
+  --blue-100: #1b2c48; --green-100: #143026; --amber-100: #362a14; --red-100: #37201e; --violet-100: #272040; --cyan-100: #143030;
+  --cloud-150: #151d29; --cloud-200: #232f3f; --cloud-300: #33435a;
   --status-clear-soft: var(--green-100); --status-caution-soft: var(--amber-100);
   --status-stop-soft: var(--red-100); --status-info-soft: var(--blue-100);
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.45);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow: 0 10px 30px rgba(0, 0, 0, 0.5); --shadow-lg: 0 22px 56px rgba(0, 0, 0, 0.62);
-  --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.35);
-  --slate-soft: #16223c; --action-primary: #2a63d8; --action-primary-hover: #3b74e8; --border-focus: var(--blue-400);
-  --text-link: var(--blue-300);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32); --shadow: 0 10px 30px rgba(0, 0, 0, 0.42); --shadow-lg: 0 22px 56px rgba(0, 0, 0, 0.5);
+  --shadow-focus: 0 0 0 3px rgba(96, 165, 250, 0.3);
+  --slate-soft: #1c2636; --action-primary: #3a6bcc; --action-primary-hover: #4a7cdd; --border-focus: var(--blue-300);
+  --text-link: var(--blue-300); --accent: var(--blue-300);
 }
 
 /* Dark-mode legibility: status pills, clause badges, CRUD cells and role flags

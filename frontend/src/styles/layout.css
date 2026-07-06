@@ -104,11 +104,14 @@
 .statebar.active .statebar-fill { box-shadow: 0 0 0 3px var(--brand-soft); }
 .statebar-label { font-size: 10.5px; color: var(--mute); text-transform: capitalize; text-align: center; }
 
-.pmix { display: flex; flex-direction: column; gap: 16px; }
-.pmix-row { display: grid; grid-template-columns: 120px 1fr 28px; align-items: center; gap: 12px; }
+.pmix { display: flex; flex-direction: column; gap: 14px; }
+.pmix-row { display: grid; grid-template-columns: 120px 1fr 28px; align-items: center; gap: 12px;
+  background: none; border: none; padding: 4px 6px; margin: 0 -6px; width: calc(100% + 12px); text-align: left;
+  border-radius: var(--radius-md); transition: background var(--dur-fast) var(--ease-cruise); }
+.pmix-row:hover { background: var(--surface-sunken); }
 .pmix-label { font-size: 13px; }
 .pmix-track { height: 12px; background: var(--slate-soft); border-radius: 999px; overflow: hidden; }
-.pmix-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.4s; }
+.pmix-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.5s var(--ease-cruise); }
 .pmix-count { font-size: 14px; font-weight: 700; text-align: right; }
 .pmix-note { font-size: 11.5px; margin: 16px 0 0; }
 

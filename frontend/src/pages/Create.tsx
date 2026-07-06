@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, UserPlus, Plane, Wrench, Truck, Check, ArrowRight, CalendarClock } from "lucide-react";
+import { Building2, Plane, Wrench, Truck, Check, ArrowRight, CalendarClock } from "lucide-react";
 import { useData } from "@/app/data";
 import { useAuth } from "@/app/auth";
 import { PILLARS, type Pillar, type PassType } from "@/domain/types";
 import { ZONES } from "@/domain/zones";
 import { JOB_ROLES, computeValidTo, today } from "@/domain/entitlements";
 import { ClauseBadge } from "@/components/ui";
+import EntityOnboarding from "./EntityOnboarding";
 
-type Tab = "pass" | "entity" | "individual";
+type Tab = "pass" | "onboard";
 
 const PILLAR_ICON = { MAN: Plane, MATERIAL: Wrench, VEHICLE: Truck };
 const PASS_TYPES: Record<Pillar, PassType[]> = {
@@ -24,7 +25,7 @@ const MAN_SUBTYPES = ["BAEP (>31 days)", "TAEP (≤30 days)", "One-Day", "Protoc
 const MATERIAL_SUBTYPES = ["One-Day", "One-month", "Quarterly (3 mo)"];
 
 export default function Create() {
-  const { entities, individuals, roleZones, contracts, applications, createEntity, createIndividual, createApplication, isStopListed, screenStopList, taepDaysUsed } = useData();
+  const { entities, individuals, roleZones, contracts, applications, createApplication, isStopListed, screenStopList, taepDaysUsed } = useData();
   const { session } = useAuth();
   const nav = useNavigate();
   const isAdmin = session?.role === "admin";
@@ -70,16 +71,6 @@ export default function Create() {
   const contractEnd = entityContracts.find((c) => c.id === contractId)?.end;
   const validTo = computeValidTo(passType, validFrom, contractEnd);
 
-  // entity form
-  const [eName, setEName] = useState("");
-  const [eCat, setECat] = useState("Ground Handling Agency");
-  const [eStrength, setEStrength] = useState(20);
-  const [ePolicy, setEPolicy] = useState("");
-
-  // individual form
-  const [iName, setIName] = useState("");
-  const [iRole, setIRole] = useState("Ramp Agent");
-  const [iLogin, setILogin] = useState(false);
   const [bcasApproval, setBcasApproval] = useState(false);
 
   const toggleZone = (c: string) => setZones((z) => (z.includes(c) ? z.filter((x) => x !== c) : [...z, c]));
@@ -140,8 +131,7 @@ export default function Create() {
 
       <div className="create-tabs">
         <button className={`ctab ${tab === "pass" ? "active" : ""}`} onClick={() => setTab("pass")}><Plane size={15} /> Raise a pass</button>
-        <button className={`ctab ${tab === "entity" ? "active" : ""}`} onClick={() => setTab("entity")}><Building2 size={15} /> New entity</button>
-        <button className={`ctab ${tab === "individual" ? "active" : ""}`} onClick={() => setTab("individual")}><UserPlus size={15} /> New individual</button>
+        <button className={`ctab ${tab === "onboard" ? "active" : ""}`} onClick={() => setTab("onboard")}><Building2 size={15} /> Onboard entity</button>
       </div>
 
       {tab === "pass" && (
@@ -291,50 +281,7 @@ export default function Create() {
         </section>
       )}
 
-      {tab === "entity" && (
-        <section className="card card-pad create-form">
-          <div className="form-2col">
-            <label className="fld"><span className="fld-l req">Entity name</span><input className="field" value={eName} onChange={(e) => setEName(e.target.value)} placeholder="Company / agency name" /></label>
-            <label className="fld"><span className="fld-l req">Category <ClauseBadge>§3 categories</ClauseBadge></span>
-              <select className="field" value={eCat} onChange={(e) => setECat(e.target.value)}>
-                {["Ground Handling Agency", "Scheduled Airline", "Concessionaire", "Cargo / Logistics", "MRO / AMO", "Govt Agency", "Contractor"].map((c) => <option key={c}>{c}</option>)}
-              </select></label>
-          </div>
-          <div className="form-2col">
-            <label className="fld"><span className="fld-l">Entity strength</span><input className="field" type="number" value={eStrength} onChange={(e) => setEStrength(+e.target.value)} /><span className="fld-hint">{eStrength > 15 ? "> 15 · self-service login unlocked" : "≤ 15 · applications via Pass Section"}</span></label>
-            <label className="fld"><span className="fld-l req">Governing policy reference <ClauseBadge>mandatory</ClauseBadge></span><input className="field" value={ePolicy} onChange={(e) => setEPolicy(e.target.value)} placeholder="AVSEC clause / internal standard" /></label>
-          </div>
-          <div className="create-foot">
-            <span className="muted" style={{ fontSize: 12 }}>One registration serves MAN, MATERIAL and VEHICLE applications.</span>
-            <button className="btn btn-brand" disabled={!eName.trim() || !ePolicy.trim() || !!done}
-              onClick={() => { const e = createEntity({ name: eName, category: eCat, strength: eStrength, policyRef: ePolicy }); setDone(`Created ${e.id}`); setTimeout(() => nav("/app/applications"), 700); }}>
-              {done ?? <>Create entity <Check size={15} /></>}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {tab === "individual" && (
-        <section className="card card-pad create-form">
-          <div className="form-2col">
-            <label className="fld"><span className="fld-l req">Full name</span><input className="field" value={iName} onChange={(e) => setIName(e.target.value)} placeholder="Applicant full name" /></label>
-            <label className="fld"><span className="fld-l req">Entity</span>
-              <select className="field" value={entityId} onChange={(e) => setEntityId(e.target.value)}>{entities.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}</select></label>
-          </div>
-          <label className="fld"><span className="fld-l req">Job role <ClauseBadge>drives zone-need</ClauseBadge></span>
-            <select className="field" value={iRole} onChange={(e) => setIRole(e.target.value)}>
-              {["Ramp Agent", "Baggage Handler", "Catering Loader", "Fuel Technician", "Security Screener", "Cargo Handler", "ATC Support Engineer"].map((r) => <option key={r}>{r}</option>)}
-            </select></label>
-          <label className="check-row"><input type="checkbox" checked={iLogin} onChange={(e) => setILogin(e.target.checked)} /> Authorize self-check login (individual can track own application status)</label>
-          <div className="create-foot">
-            <span className="muted" style={{ fontSize: 12 }}>Individuals can be created by the Entity (own staff) or Pass Section (entities &lt; 15).</span>
-            <button className="btn btn-brand" disabled={!iName.trim() || !!done}
-              onClick={() => { const i = createIndividual({ entityId, name: iName, jobRole: iRole, loginAuthorized: iLogin }); setDone(`Created ${i.id}`); setTimeout(() => setDone(null), 900); setIName(""); }}>
-              {done ?? <>Create individual <Check size={15} /></>}
-            </button>
-          </div>
-        </section>
-      )}
+      {tab === "onboard" && <EntityOnboarding embedded />}
     </div>
   );
 }

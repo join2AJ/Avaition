@@ -7,18 +7,20 @@ const ICON = { entity: Building2, individual: User, material: Wrench, vehicle: T
 
 // Reference page — what an entity / individual must obtain for each pass
 // (MAN / MATERIAL / VEHICLE ADP+VAP), straight from AVSEC 02/2022 §4.
-export default function Checklist() {
+export default function Checklist({ embedded = false }: { embedded?: boolean }) {
   const [scope, setScope] = useState<string>("entity");
   const group = CHECKLISTS.find((g) => g.scope === scope)!;
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <div>
-          <h2>Checklists</h2>
-          <p className="muted">What you need to obtain any pass — MAN, MATERIAL and VEHICLE (ADP/VAP) — for entities and individuals. Every document must be signed &amp; stamped by the Authorized Signatory · §4.</p>
+    <div className={embedded ? "" : "page"}>
+      {!embedded && (
+        <div className="page-head">
+          <div>
+            <h2>Checklists</h2>
+            <p className="muted">What you need to obtain any pass — MAN, MATERIAL and VEHICLE (ADP/VAP) — for entities and individuals. Every document must be signed &amp; stamped by the Authorized Signatory · §4.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="create-tabs">
         {CHECKLISTS.map((g) => {

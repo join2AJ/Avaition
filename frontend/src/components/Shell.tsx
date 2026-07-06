@@ -4,14 +4,13 @@ import { Bell, LogOut, Moon, Plane, Search, Sun, PanelLeftClose, PanelLeft } fro
 import { useAuth } from "@/app/auth";
 import { useTheme } from "@/app/theme";
 import { useData } from "@/app/data";
-import { NAV_BY_ROLE } from "@/app/nav";
 import { ROLE_LABEL } from "@/domain/roles";
 import { PILLARS } from "@/domain/types";
 
 export default function Shell({ children }: { children: ReactNode }) {
   const { session, signOut } = useAuth();
   const { theme, toggle } = useTheme();
-  const { notifications, markNotificationsRead } = useData();
+  const { notifications, markNotificationsRead, visibleNav } = useData();
   const nav = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -52,7 +51,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   };
 
   if (!session) return null;
-  const items = NAV_BY_ROLE[session.role];
+  const items = visibleNav(session.role);
 
   return (
     <div className={`shell ${collapsed ? "collapsed" : ""}`}>

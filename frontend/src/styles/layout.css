@@ -439,6 +439,14 @@
 .role-flag { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--red-500); background: var(--red-100); padding: 1px 6px; border-radius: 5px; margin-left: 8px; }
 .role-custom { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--navy-500); background: var(--blue-100); padding: 1px 6px; border-radius: 5px; margin-left: 8px; }
 .flag-banner { display: flex; align-items: center; gap: 12px; border-color: #e7c4c4; background: var(--red-100); font-size: 13px; color: var(--red-700); }
+
+/* Access-control visibility matrix. */
+.access-matrix .mx-vert { min-width: 190px; }
+.access-na { color: var(--text-muted); opacity: 0.4; }
+.vis-cell { display: inline-grid; place-items: center; width: 30px; height: 26px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface-card); cursor: pointer; transition: var(--transition); }
+.vis-cell.on { color: var(--green-700); border-color: var(--green-300); background: color-mix(in srgb, var(--green-700) 10%, transparent); }
+.vis-cell.off { color: var(--text-muted); opacity: 0.55; }
+.vis-cell:hover { border-color: var(--navy-500); }
 .create-role-row { display: flex; flex-direction: column; gap: 8px; }
 .crr-form { display: flex; gap: 10px; max-width: 520px; }
 .crr-form .field { flex: 1; }

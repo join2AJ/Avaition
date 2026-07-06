@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Application, ApplicationStatus, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage } from "@/domain/types";
+import type { Application, ApplicationStatus, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage, Role } from "@/domain/types";
+import { NAV_BY_ROLE, canAccess as baseCanAccess, type NavItem } from "./nav";
 import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, SURRENDERS, type AuditEntry, type StopListEntry, type Surrender } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
@@ -50,6 +51,10 @@ interface DataCtx {
   contracts: Contract[]; notifications: Notification[]; surrenders: Surrender[];
   roleZones: RoleZoneMatrix;
   roles: RoleDef[];
+  navHidden: Record<string, string[]>;                            // Admin — per-role hidden nav paths
+  setNavVisible: (role: string, to: string, visible: boolean) => void;
+  visibleNav: (role: Role) => NavItem[];                          // effective nav after access-control overrides
+  canSee: (role: Role, path: string) => boolean;                  // route authorization incl. overrides
   createEntity: (e: NewEntity) => Entity;
   createIndividual: (i: NewIndividual) => Individual;
   createApplication: (a: NewApplication) => Application;
@@ -92,6 +97,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>(() => load("aep-notifs", []));
   const [stopList, setStopList] = useState<StopListEntry[]>(() => load("aep-stoplist", STOP_LIST));
   const [surrenders, setSurrenders] = useState<Surrender[]>(() => load("aep-surrenders", SURRENDERS));
+  const [navHidden, setNavHidden] = useState<Record<string, string[]>>(() => load("aep-navhidden", {}));
+  useEffect(() => { sessionStorage.setItem("aep-navhidden", JSON.stringify(navHidden)); }, [navHidden]);
+
+  // Admin access-control: hide/show any nav destination for any login. Drives
+  // both the sidebar and the route guard so hidden pages are truly unreachable.
+  const setNavVisible: DataCtx["setNavVisible"] = (role, to, visible) => {
+    setNavHidden((m) => {
+      const cur = new Set(m[role] ?? []);
+      visible ? cur.delete(to) : cur.add(to);
+      return { ...m, [role]: Array.from(cur) };
+    });
+    log("edit_access", role, `${visible ? "granted" : "hid"} ${to} for ${role}`);
+  };
+  const visibleNav: DataCtx["visibleNav"] = (role) => {
+    const hidden = new Set(navHidden[role] ?? []);
+    return (NAV_BY_ROLE[role] ?? []).filter((i) => !hidden.has(i.to));
+  };
+  const canSee: DataCtx["canSee"] = (role, path) => {
+    if (!baseCanAccess(role, path)) return false;
+    const hidden = new Set(navHidden[role] ?? []);
+    const item = (NAV_BY_ROLE[role] ?? []).find((i) => (i.to === "/app" ? path === "/app" : path === i.to || path.startsWith(i.to + "/")));
+    return item ? !hidden.has(item.to) : true;
+  };
   useEffect(() => { sessionStorage.setItem("aep-stoplist", JSON.stringify(stopList)); }, [stopList]);
   useEffect(() => { sessionStorage.setItem("aep-surrenders", JSON.stringify(surrenders)); }, [surrenders]);
 
@@ -446,6 +474,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, surrenders, roleZones, roles,
+      navHidden, setNavVisible, visibleNav, canSee,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, recordSurrenderJustification, raiseSurrenderPenalty, resolveSurrenderPenalty,
       applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, IdCard, FileCheck2, PenLine, Grid3x3, ArrowRight, ArrowLeft, Upload, Plus, Trash2 } from "lucide-react";
+import { Check, IdCard, FileCheck2, PenLine, Grid3x3, FileSignature, ArrowRight, ArrowLeft, Upload, Plus, Trash2 } from "lucide-react";
 import { ZONES } from "@/domain/zones";
 import { useData } from "@/app/data";
 import type { Signatory, EntityDoc, EntityJobRole } from "@/domain/types";
@@ -8,6 +8,7 @@ import { ClauseBadge } from "@/components/ui";
 
 const STEPS = [
   { key: "identity", label: "Identity", icon: IdCard },
+  { key: "contract", label: "Contract", icon: FileSignature },
   { key: "docs", label: "Compliance docs", icon: FileCheck2 },
   { key: "signatories", label: "Signatories", icon: PenLine },
   { key: "jobzones", label: "Job roles & zones", icon: Grid3x3 },
@@ -16,13 +17,12 @@ const STEPS = [
 const DOC_DEFS = [
   "Security Clearance (BCAS) # + expiry",
   "Security Programme (BCAS-approved)",
-  "Contract / LOI / LOA / PO",
   "NCASP compliance declaration",
   "AOP / NSOP linkage",
 ];
 
-export default function EntityOnboarding() {
-  const { createEntity } = useData();
+export default function EntityOnboarding({ embedded = false }: { embedded?: boolean }) {
+  const { createEntity, createContract } = useData();
   const nav = useNavigate();
   const [step, setStep] = useState(0);
   const [done, setDone] = useState<string | null>(null);
@@ -31,8 +31,14 @@ export default function EntityOnboarding() {
   const [category, setCategory] = useState("Ground Handling Agency");
   const [strength, setStrength] = useState(20);
   const [policyRef, setPolicyRef] = useState("");
+
+  // Contract captured at onboarding — with whom, type, scope, term (§3 · §7A).
+  const [counterparty, setCounterparty] = useState("");
+  const [cType, setCType] = useState("Work Order");
+  const [scope, setScope] = useState("");
   const [contractStart, setContractStart] = useState("");
   const [contractEnd, setContractEnd] = useState("");
+  const [copyFileName, setCopyFileName] = useState("");
 
   const [docs, setDocs] = useState<EntityDoc[]>(DOC_DEFS.map((name) => ({ name })));
   const setDoc = (i: number, patch: Partial<EntityDoc>) => setDocs((d) => d.map((x, j) => (j === i ? { ...x, ...patch } : x)));
@@ -51,7 +57,7 @@ export default function EntityOnboarding() {
   const addJR = () => setJobRoles((r) => [...r, { role: "", zones: [], justification: "" }]);
 
   const validSigs = sigs.filter((s) => s.name.trim()).length;
-  const canComplete = name.trim() && policyRef.trim() && validSigs >= 2;
+  const canComplete = name.trim() && policyRef.trim() && counterparty.trim() && contractEnd && validSigs >= 2;
 
   const complete = () => {
     const e = createEntity({
@@ -60,18 +66,25 @@ export default function EntityOnboarding() {
       docs: docs.filter((d) => d.reference || d.fileName || d.expiry),
       jobRoles: jobRoles.filter((j) => j.role.trim()),
     });
+    // Register the onboarding contract against the new entity.
+    createContract({
+      entityId: e.id, counterparty, type: cType,
+      start: contractStart, end: contractEnd, scope, copyFileName,
+    });
     setDone(`Created ${e.id}`);
-    setTimeout(() => nav("/app/applications"), 800);
+    setTimeout(() => nav("/app/status"), 800);
   };
 
-  return (
-    <div className="page">
-      <div className="page-head">
-        <div>
-          <h2>Entity onboarding</h2>
-          <p className="muted">One registration serves all three pillars. Min 2, max 5 Authorized Signatories · certified by MD/CEO/CSO · original signatures only · §13A.</p>
+  const body = (
+    <>
+      {!embedded && (
+        <div className="page-head">
+          <div>
+            <h2>Entity onboarding</h2>
+            <p className="muted">One registration serves all three pillars. Min 2, max 5 Authorized Signatories · certified by MD/CEO/CSO · original signatures only · §13A.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="wizard-steps">
         {STEPS.map((s, i) => (
@@ -96,19 +109,32 @@ export default function EntityOnboarding() {
               <label className="fld"><span className="fld-l">Entity strength</span><input className="field" type="number" value={strength} onChange={(e) => setStrength(+e.target.value)} /><span className="fld-hint">{strength > 15 ? "> 15 · self-service login + DSC" : "≤ 15 · applications via Pass Section"}</span></label>
               <label className="fld"><span className="fld-l req">Governing policy reference <ClauseBadge>mandatory</ClauseBadge></span><input className="field" value={policyRef} onChange={(e) => setPolicyRef(e.target.value)} placeholder="AVSEC clause / internal standard" /></label>
             </div>
-            <div className="form-2col">
-              <label className="fld"><span className="fld-l">Contract start</span><input className="field" type="date" value={contractStart} onChange={(e) => setContractStart(e.target.value)} /></label>
-              <label className="fld"><span className="fld-l">Contract end</span><input className="field" type="date" value={contractEnd} onChange={(e) => setContractEnd(e.target.value)} /><span className="fld-hint">AEP is co-terminus with the earliest of clearance / NSOP-AOP / contract.</span></label>
-            </div>
           </div>
         )}
 
         {step === 1 && (
           <div className="wiz-form">
+            <p className="muted" style={{ fontSize: 12.5 }}>The engagement that authorizes airport access. Every pass is raised under this contract and is co-terminus with its end date · <ClauseBadge>§3 · §7A</ClauseBadge></p>
+            <div className="form-2col">
+              <label className="fld"><span className="fld-l req">Contract with (counterparty)</span><input className="field" value={counterparty} onChange={(e) => setCounterparty(e.target.value)} placeholder="Airport Operator / airline / principal" /></label>
+              <label className="fld"><span className="fld-l">Type</span>
+                <select className="field" value={cType} onChange={(e) => setCType(e.target.value)}>{["LOI", "LOA", "PO", "SO", "Work Order", "Agreement"].map((t) => <option key={t}>{t}</option>)}</select></label>
+            </div>
+            <label className="fld"><span className="fld-l">Scope of work <span className="fld-hint" style={{ display: "inline" }}>(drives allowed zones)</span></span><input className="field" value={scope} onChange={(e) => setScope(e.target.value)} placeholder="e.g. Ramp & baggage handling" /></label>
+            <div className="form-2col">
+              <label className="fld"><span className="fld-l">Contract start</span><input className="field" type="date" value={contractStart} onChange={(e) => setContractStart(e.target.value)} /></label>
+              <label className="fld"><span className="fld-l req">Contract end (valid till)</span><input className="field" type="date" value={contractEnd} onChange={(e) => setContractEnd(e.target.value)} /><span className="fld-hint">AEP is co-terminus with the earliest of clearance / NSOP-AOP / contract.</span></label>
+            </div>
+            <label className="upload-btn" style={{ alignSelf: "flex-start" }}><Upload size={13} /> {copyFileName ? copyFileName.slice(0, 22) : "Attach contract copy"}<input type="file" hidden onChange={(e) => setCopyFileName(e.target.files?.[0]?.name ?? "")} /></label>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="wiz-form">
             <p className="muted" style={{ fontSize: 12.5 }}>Attach the mandatory compliance documents. Expired mandatory doc ⇒ new applications blocked · §3 gates.</p>
             {docs.map((d, i) => (
               <div className="doc-row" key={d.name}>
-                <span className="doc-name">{d.name}{i < 4 && <span className="req-dot" />}</span>
+                <span className="doc-name">{d.name}{i < 3 && <span className="req-dot" />}</span>
                 <input className="field mini" placeholder="Reference / number" value={d.reference || ""} onChange={(e) => setDoc(i, { reference: e.target.value })} />
                 <input className="field mini" type="date" title="Expiry" value={d.expiry || ""} onChange={(e) => setDoc(i, { expiry: e.target.value })} />
                 <label className="upload-btn"><Upload size={13} /> {d.fileName ? d.fileName.slice(0, 14) : "Upload"}
@@ -118,7 +144,7 @@ export default function EntityOnboarding() {
           </div>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="wiz-form">
             <p className="muted" style={{ fontSize: 12.5 }}>Min <b>2</b>, max <b>5</b> · certified by MD/CEO/CSO · original signatures only. Currently {validSigs} valid.</p>
             {sigs.map((s, i) => (
@@ -136,7 +162,7 @@ export default function EntityOnboarding() {
           </div>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="wiz-form">
             <p className="muted" style={{ fontSize: 12.5 }}>Entities may define their own job roles and the zones each needs, with justification. Requested zones become the entity's entitled set (re-confirmed at renewal) · need-to-access.</p>
             {jobRoles.map((jr, i) => (
@@ -163,6 +189,8 @@ export default function EntityOnboarding() {
           ? <button className="btn btn-brand" onClick={() => setStep((s) => s + 1)}>Continue <ArrowRight size={15} /></button>
           : <button className="btn btn-brand" disabled={!canComplete || !!done} onClick={complete}>{done ?? <><Check size={15} /> Complete onboarding</>}</button>}
       </div>
-    </div>
+    </>
   );
+
+  return embedded ? body : <div className="page">{body}</div>;
 }

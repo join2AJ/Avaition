@@ -6,7 +6,9 @@ compliance vs non-compliance, and give entities a governed way to obtain staff/m
 
 Severity: **S1** critical (compliance/security defect) · **S2** important gap · **S3** polish.
 
-Status: ☐ open · ☑ fixed.
+Status: ☐ open · ☑ fixed. **All findings remediated except C3 (real server-side auth), which lands with
+the FastAPI wiring.** First pass A1–A6 · B1–B3 · C1–C2 · D1–D3 all closed; second-pass sweep (E1–E6)
+found and fixed six further defects exposed once the lifecycle became drivable.
 
 ## A. Compliance correctness (AVSEC 02/2022)
 
@@ -74,6 +76,11 @@ Status: ☐ open · ☑ fixed.
   holder free to be raised again. Now withdrawing a MAN pass auto-adds the holder to the Stop List
   (source BCAS RO), so the Create screen screens them out on the next attempt (§9). Verified: holder
   appears on the Stop List immediately after withdrawal.
+- ☑ **E7 · S2 — Notification over-scope.** The bell showed every notification to every role, so an
+  entity/individual login could read internal BCAS/operator traffic and other audiences' messages. Fix:
+  the bell now filters by audience — entity/individual see only their own; aerodrome staff
+  (admin/operator/bcas) oversee the pipeline; CISF (verify-only) sees none. Unread count respects it.
+  Verified per role.
 
 ## C. Application security
 

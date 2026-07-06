@@ -49,6 +49,25 @@ Un-parked → Surrendered, with the surrender feeding the penalty tracker — gr
   20%-of-population audit sample as a progress meter (audited YTD vs target) plus a monthly
   surprise-check chart with finding counts, per the AEP Checking Committee mandate.
 
+## F. Tab-wise UX & governance improvements (third pass)
+
+- ☑ **F1 — Dark theme eye-comfort.** Reworked to desaturated slate surfaces (no near-black), gentle
+  app→card steps, soft off-white text and calmer low-glare accents/shadows; still AA (heading 15:1).
+- ☑ **F2 — Passes-by-pillar boundary.** The pillar rows were `<button>`s rendering the browser's default
+  border/background box; stripped the chrome (transparent, subtle hover) while keeping the bars dynamic.
+- ☑ **F3 — Notifications page + source + history.** Every notification records who pushed it (BCAS /
+  Pass Section / Admin / Entity / System-auto); a dedicated tab shows full history with date-time (IST),
+  audience, tone and a source filter. Bell reuses the same scoped feed and links to it.
+- ☑ **F4 — Committee processing chain as cards.** The 8-step chain (§8.3.3) is now one explained card per
+  step (what happens + owner + clause) instead of a cramped node row.
+- ☑ **F5 — Requirements basis sub-tab (Users & roles).** Splits every flow into BCAS regulatory-mandatory
+  vs Aerodrome-Operator-devised; Material (ToT), parked/un-park handling and Material/Vehicle SLAs are
+  flagged operator-devised since AVSEC 02/2022 is largely silent on them.
+
+*Observed for future passes (not yet done):* Validity matrix could gain the same tile drill-downs as
+Compliance; Applications register could expose a saved-filter/export; Audit log could add a date-range
+filter and CSV export; Entity profile is still a placeholder page.
+
 ## E. Second-pass findings (post-remediation audit)
 
 - ☑ **E1 · S1 — Gate accepted expired cards.** The CISF Verify screen treated any `issued`/`approved`

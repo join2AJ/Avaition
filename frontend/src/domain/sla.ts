@@ -24,7 +24,7 @@ export const SLA_STANDARDS: SlaStandard[] = [
   { passType: "BAEP", pillar: "MAN", label: "Permanent AEP (biometric)", overall: "35 working days (incl. BGC)", clause: "§8.3.3.11" },
   { passType: "Permanent", pillar: "MAN", label: "Protocol / Permanent AEP", overall: "35 working days", clause: "§8.3.3.11" },
   { passType: "ToT", pillar: "MATERIAL", label: "Tools of Trade card", overall: "5 working days (assumed)", clause: "§10.2 · Annex C", assumed: true },
-  { passType: "VEP", pillar: "VEHICLE", label: "Vehicle Entry Permit", overall: "7 working days (assumed)", clause: "§14", assumed: true },
+  { passType: "VAP", pillar: "VEHICLE", label: "Vehicle Area Pass", overall: "7 working days (assumed)", clause: "§14", assumed: true },
 ];
 
 /** Common lifecycle stages, ordered — used to place any pass's flow on one axis. */
@@ -77,18 +77,18 @@ export const TOT_LIFECYCLE: LifecycleStep[] = [
   { n: 3, stage: "handover", phase: "Issue", action: "ToT card issued (separate from AEP)", owner: "Airport Operator", sla: "Same day", clause: "Annex C" },
 ];
 
-/** VEHICLE · Vehicle Entry Permit (VEP) + ADP — issued by Airport Operator (§14). */
-export const VEP_LIFECYCLE: LifecycleStep[] = [
+/** VEHICLE · Vehicle Area Pass (VAP) + ADP — issued by Airport Operator (§14). */
+export const VAP_LIFECYCLE: LifecycleStep[] = [
   { n: 0, stage: "intake", phase: "Intake", action: "Vehicle papers (RC, PUC, Fitness, Speed Governor) + driver ADP", owner: "Entity / AS", sla: "Day 0", clause: "§14" },
   { n: 1, stage: "checklist", phase: "Verify", action: "Document verification + Airside Driving Permit check", owner: "Pass Section", sla: "3 WD (assumed)", assumed: true },
   { n: 2, stage: "committee", phase: "Approval", action: "Airport Operator approves; RFID tag mapped", owner: "Airport Operator", sla: "≤ 7 WD (assumed)", assumed: true },
-  { n: 3, stage: "handover", phase: "Issue", action: "VEP displayed on windshield · max 1 year, non-transferable", owner: "Airport Operator", sla: "Same day", clause: "§14" },
+  { n: 3, stage: "handover", phase: "Issue", action: "VAP displayed on windshield · max 1 year, non-transferable", owner: "Airport Operator", sla: "Same day", clause: "§14" },
 ];
 
 /** Pick the lifecycle for a given pass. */
 export function lifecycleFor(pillar: Pillar, passType: PassType): LifecycleStep[] {
   if (pillar === "MATERIAL") return TOT_LIFECYCLE;
-  if (pillar === "VEHICLE") return VEP_LIFECYCLE;
+  if (pillar === "VEHICLE") return VAP_LIFECYCLE;
   if (passType === "TAEP" || passType === "VAT") return TAEP_LIFECYCLE;
   return BAEP_LIFECYCLE;
 }
@@ -136,7 +136,7 @@ export const SLA_HEALTH_META: Record<SlaHealth, { label: string; tone: string }>
   breached: { label: "Breached", tone: "red" },
 };
 
-/** Ongoing lifecycle clocks common to AEP · ToT · VEP. */
+/** Ongoing lifecycle clocks common to AEP · ToT · VAP. */
 export const LIFECYCLE_CLOCKS = [
   { label: "Parked (non-use)", value: "60 days", note: "Suspended, not cancelled", clause: "§10.6" },
   { label: "Un-park after request", value: "24 hours", note: "Then 7 days to use", clause: "§10.6" },

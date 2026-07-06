@@ -8,7 +8,7 @@ import { today } from "@/domain/entitlements";
 import { Pill, PillarBadge, ZoneChips, ClauseBadge } from "@/components/ui";
 
 // CISF gate verification — search-only. Officer types a pass number
-// (AEP / protocol / ToT / VEP-ADP) and confirms the on-screen record against
+// (AEP / protocol / ToT / VAP-ADP) and confirms the on-screen record against
 // the physical card in the holder's hand. No dashboard, no editing.
 export default function Verify() {
   const { applications: apps, entities, log } = useData();
@@ -48,7 +48,7 @@ export default function Verify() {
           <ScanSearch size={18} className="muted" />
           <input
             className="verify-field"
-            placeholder="AEP no. · protocol no. · ToT no. · VEP / ADP  (e.g. APP-2258)"
+            placeholder="AEP no. · protocol no. · ToT no. · VAP / ADP  (e.g. APP-2258)"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && search()}
@@ -56,7 +56,7 @@ export default function Verify() {
           />
           <button className="btn btn-brand" onClick={search}>Verify</button>
         </div>
-        <p className="muted verify-hint">All pillars searchable — MAN (AEP/TAEP), MATERIAL (ToT), VEHICLE (VEP/ADP).</p>
+        <p className="muted verify-hint">All pillars searchable — MAN (AEP/TAEP), MATERIAL (ToT), VEHICLE (VAP/ADP).</p>
       </div>
 
       {result === null && (

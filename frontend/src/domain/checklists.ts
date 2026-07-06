@@ -42,12 +42,12 @@ export const VEHICLE_DOCS: DocItem[] = [
   { name: "Pollution (PUC) Certificate", clause: "§14" },
   { name: "Fitness Certificate", clause: "§14" },
   { name: "Speed Governor Certificate", clause: "§14" },
-  { name: "VEP application (Vehicle Entry Permit)", note: "max 1 year · non-transferable · displayed on vehicle front · RFID tag post-deployment", clause: "§12A" },
+  { name: "VAP application (Vehicle Area Pass)", note: "max 1 year · non-transferable · displayed on vehicle front · RFID tag post-deployment", clause: "§12A" },
 ];
 
 export const CHECKLISTS: ChecklistGroup[] = [
   { title: "Entity / Company — one-time per airport", scope: "entity", items: ENTITY_DOCS },
   { title: "Individual — MAN (TAEP / BAEP)", scope: "individual", items: INDIVIDUAL_DOCS },
   { title: "MATERIAL — Tools of the Trade (ToT)", scope: "material", items: MATERIAL_DOCS },
-  { title: "VEHICLE — VEP + Driver ADP", scope: "vehicle", items: VEHICLE_DOCS },
+  { title: "VEHICLE — VAP + Driver ADP", scope: "vehicle", items: VEHICLE_DOCS },
 ];

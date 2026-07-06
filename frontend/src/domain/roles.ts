@@ -29,7 +29,7 @@ export const ROLES: RoleMeta[] = [
     title: "CISF — Gate Verification",
     tag: "VERIFY ONLY",
     accent: "var(--role-cisf)",
-    blurb: "Search a pass number (AEP · protocol · ToT · VEP/ADP) to verify details against the physical card at the gate.",
+    blurb: "Search a pass number (AEP · protocol · ToT · VAP/ADP) to verify details against the physical card at the gate.",
   },
   {
     key: "entity",

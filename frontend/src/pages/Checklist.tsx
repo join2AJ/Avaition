@@ -25,7 +25,7 @@ export default function Checklist() {
           const Icon = ICON[g.scope];
           return (
             <button key={g.scope} className={`ctab ${scope === g.scope ? "active" : ""}`} onClick={() => setScope(g.scope)}>
-              <Icon size={15} /> {g.scope === "entity" ? "Entity" : g.scope === "individual" ? "Individual (MAN)" : g.scope === "material" ? "Material (ToT)" : "Vehicle (VEP/ADP)"}
+              <Icon size={15} /> {g.scope === "entity" ? "Entity" : g.scope === "individual" ? "Individual (MAN)" : g.scope === "material" ? "Material (ToT)" : "Vehicle (VAP/ADP)"}
             </button>
           );
         })}

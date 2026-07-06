@@ -16,8 +16,8 @@ const PASS_TYPES: Record<Pillar, PassType[]> = {
   // BCAS-approval exception; BAEP/PAEP (>31 days) is the biometric permanent card.
   MAN: ["BAEP", "Permanent", "TAEP", "VAT"],
   MATERIAL: ["ToT"],
-  // ADP (driver) is applied FIRST; the VEP/VAP is issued against a valid ADP.
-  VEHICLE: ["ADP", "VEP", "VAP"],
+  // ADP (driver) is applied FIRST; the VAP is issued against a valid ADP.
+  VEHICLE: ["ADP", "VAP"],
 };
 // MAN sub-type presets shown as quick chips.
 const MAN_SUBTYPES = ["BAEP (>31 days)", "TAEP (≤30 days)", "One-Day", "Protocol (paper)"];
@@ -217,10 +217,10 @@ export default function Create() {
           {pillar === "VEHICLE" && passType !== "ADP" && (
             <label className="fld"><span className="fld-l req">Driver Airside Driving Permit (ADP)</span>
               <input className="field" value={adp} onChange={(e) => setAdp(e.target.value)} placeholder="ADP holder / permit no. · §14" />
-              <span className="fld-hint">ADP is applied <b>first</b> — a VEP/VAP can only be issued against a valid ADP holder.</span></label>
+              <span className="fld-hint">ADP is applied <b>first</b> — a VAP can only be issued against a valid ADP holder.</span></label>
           )}
           {pillar === "VEHICLE" && passType === "ADP" && (
-            <p className="muted" style={{ fontSize: 12 }}>Airside Driving Permit for the driver — create this <b>before</b> the vehicle's VEP/VAP · §14.</p>
+            <p className="muted" style={{ fontSize: 12 }}>Airside Driving Permit for the driver — create this <b>before</b> the vehicle's VAP · §14.</p>
           )}
 
           <div className="fld"><span className="fld-l">Zones requested <ClauseBadge>need-to-access</ClauseBadge></span>

@@ -20,7 +20,7 @@ export const CENTRAL_NORMS: ValidityNorm[] = [
   { passType: "TAEP", family: "MAN", centralDays: 30, centralLabel: "max 30 days", authority: "Local regulatory (Airport Operator)" },
   { passType: "VAT", family: "MAN", centralDays: 1, centralLabel: "4 hours · single use", authority: "Local regulatory (Airport Operator)" },
   { passType: "ADP / VAP", family: "VEHICLE", centralDays: 365, centralLabel: "max 1 year", authority: "Local regulatory (Airport Operator)" },
-  { passType: "VEP", family: "VEHICLE", centralDays: 365, centralLabel: "max 1 year · non-transferable", authority: "Local regulatory (Airport Operator)" },
+  { passType: "VAP", family: "VEHICLE", centralDays: 365, centralLabel: "max 1 year · non-transferable", authority: "Local regulatory (Airport Operator)" },
   { passType: "Material — 1-day ToT", family: "MATERIAL", centralDays: 1, centralLabel: "single day", authority: "Aerodrome Operator", hasDirection: true },
   { passType: "Material — ToT (quarterly)", family: "MATERIAL", centralDays: 90, centralLabel: "max quarterly", authority: "Aerodrome Operator", hasDirection: true },
 ];

@@ -11,7 +11,7 @@ export type Pillar = "MAN" | "MATERIAL" | "VEHICLE";
 export const PILLARS: { key: Pillar; roman: string; label: string; pass: string; clause: string }[] = [
   { key: "MAN", roman: "I", label: "Man", pass: "AEP", clause: "§5 · §10 · §11" },
   { key: "MATERIAL", roman: "II", label: "Material", pass: "ToT", clause: "§12B" },
-  { key: "VEHICLE", roman: "III", label: "Vehicle", pass: "VEP", clause: "§12A" },
+  { key: "VEHICLE", roman: "III", label: "Vehicle", pass: "VAP", clause: "§12A" },
 ];
 
 export type Role = "admin" | "operator" | "bcas" | "cisf" | "entity" | "others" | "individual";
@@ -40,7 +40,7 @@ export type ApplicationStatus =
 export type EntityStatus = "active" | "suspended" | "archived";
 
 /** Pass types vary by pillar. */
-export type PassType = "BAEP" | "TAEP" | "VAT" | "Permanent" | "ToT" | "VEP" | "VAP" | "ADP";
+export type PassType = "BAEP" | "TAEP" | "VAT" | "Permanent" | "ToT" | "VAP" | "ADP";
 
 export interface GuidelineClause {
   order_no: string;

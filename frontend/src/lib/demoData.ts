@@ -103,7 +103,7 @@ export const AUDIT: AuditEntry[] = [
   { ts: "2026-07-05 11:30", actor: "Pass Section Staff", role: "operator", action: "schedule_committee", object: "APP-2256", detail: "CMTE-07 · 2026-07-09", tone: "ok" },
   { ts: "2026-07-05 11:47", actor: "BCAS Officer", role: "bcas", action: "late_surrender_flag", object: "APP-2244", detail: "9 days late · entity notified", tone: "bad" },
   { ts: "2026-07-05 12:03", actor: "Portal Administrator", role: "admin", action: "access_policy", object: "BCAS pillars", detail: "MATERIAL kept hidden", tone: "ok" },
-  { ts: "2026-07-05 12:20", actor: "CISF Gate Officer", role: "cisf", action: "verify", object: "APP-2258", detail: "VEP verified at gate · match", tone: "ok" },
+  { ts: "2026-07-05 12:20", actor: "CISF Gate Officer", role: "cisf", action: "verify", object: "APP-2258", detail: "VAP verified at gate · match", tone: "ok" },
   { ts: "2026-07-05 12:35", actor: "GHA-Delta Ground Services", role: "entity", action: "create_application", object: "APP-2247", detail: "MATERIAL · ToT raised", tone: "ok" },
 ];
 
@@ -113,10 +113,10 @@ export const APPLICATIONS: Application[] = [
   { id: "APP-2240", pillar: "MAN", entityId: "ENT-03", subject: "S. Khan", passType: "TAEP", zones: ["T"], status: "clarification", createdBy: "Pass Section", createdAt: "2026-07-04", clauseRef: "§8.3.3" },
   { id: "APP-2244", pillar: "MAN", entityId: "ENT-04", subject: "D. Rao", passType: "BAEP", zones: ["P", "T"], status: "approved", createdBy: "Entity", createdAt: "2026-07-03", clauseRef: "§5" },
   { id: "APP-2247", pillar: "MATERIAL", entityId: "ENT-01", subject: "AME Toolkit · V. Singh", passType: "ToT", zones: ["P"], escort: "R. Sharma", status: "checklist_pending", createdBy: "Entity", createdAt: "2026-07-05", clauseRef: "§12B" },
-  { id: "APP-2248", pillar: "VEHICLE", entityId: "ENT-01", subject: "DL-1GC-4471 · pushback tug", passType: "VEP", zones: ["P"], status: "checklist_pending", createdBy: "Entity", createdAt: "2026-07-05", clauseRef: "§12A" },
+  { id: "APP-2248", pillar: "VEHICLE", entityId: "ENT-01", subject: "DL-1GC-4471 · pushback tug", passType: "VAP", zones: ["P"], status: "checklist_pending", createdBy: "Entity", createdAt: "2026-07-05", clauseRef: "§12A" },
   { id: "APP-2256", pillar: "MAN", entityId: "ENT-02", subject: "P. Nair", passType: "BAEP", zones: ["T", "Si"], status: "committee_scheduled", createdBy: "Entity", createdAt: "2026-07-02", clauseRef: "§5" },
   { id: "APP-2257", pillar: "MATERIAL", entityId: "ENT-02", subject: "Catering hi-loader", passType: "ToT", zones: ["P"], escort: "P. Nair", status: "checklist_pending", createdBy: "Entity", createdAt: "2026-07-05", clauseRef: "§12B" },
-  { id: "APP-2258", pillar: "VEHICLE", entityId: "ENT-05", subject: "MH-04-CV-2231 · cargo van", passType: "VEP", zones: ["Cd"], status: "issued", createdBy: "Pass Section", createdAt: "2026-06-28", expiryDate: "2026-07-22", clauseRef: "§12A" },
+  { id: "APP-2258", pillar: "VEHICLE", entityId: "ENT-05", subject: "MH-04-CV-2231 · cargo van", passType: "VAP", zones: ["Cd"], status: "issued", createdBy: "Pass Section", createdAt: "2026-06-28", expiryDate: "2026-07-22", clauseRef: "§12A" },
   { id: "APP-2259", pillar: "MAN", entityId: "ENT-05", subject: "A. Reddy", passType: "TAEP", zones: ["Cd", "Csd"], status: "issued", createdBy: "Pass Section", createdAt: "2026-06-25", expiryDate: "2026-07-19", clauseRef: "§5" },
   { id: "APP-2260", pillar: "MAN", entityId: "ENT-03", subject: "N. Gupta", passType: "TAEP", zones: ["T"], status: "rejected", createdBy: "Pass Section", createdAt: "2026-06-30", clauseRef: "§5" },
   { id: "APP-2261", pillar: "MAN", entityId: "ENT-01", subject: "K. Menon", passType: "BAEP", zones: ["A", "T"], status: "parked", createdBy: "Pass Section", createdAt: "2026-04-20", expiryDate: "2027-04-19", clauseRef: "§5",

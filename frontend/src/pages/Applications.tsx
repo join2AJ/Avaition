@@ -14,7 +14,7 @@ import { Pill, PillarBadge, ZoneChips, ClauseBadge } from "@/components/ui";
 import ApplicationRegister from "@/components/ApplicationRegister";
 import SlaStepper from "@/components/SlaStepper";
 
-const PASS_TYPES_ALL = ["BAEP", "TAEP", "VAT", "Permanent", "ToT", "VEP", "VAP", "ADP"];
+const PASS_TYPES_ALL = ["BAEP", "TAEP", "VAT", "Permanent", "ToT", "VAP", "ADP"];
 
 export default function Applications() {
   const { session } = useAuth();

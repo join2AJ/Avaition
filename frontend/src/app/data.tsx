@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Application, ApplicationStatus, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage, Role } from "@/domain/types";
 import { NAV_BY_ROLE, canAccess as baseCanAccess, type NavItem } from "./nav";
-import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, SURRENDERS, type AuditEntry, type StopListEntry, type Surrender } from "@/lib/demoData";
+import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, SURRENDERS, ZONE_ESCALATIONS, type AuditEntry, type StopListEntry, type Surrender, type ZoneEscalation } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
@@ -49,6 +49,8 @@ export type RoleZoneMatrix = Record<string, string[]>;
 interface DataCtx {
   entities: Entity[]; individuals: Individual[]; applications: Application[]; audit: AuditEntry[];
   contracts: Contract[]; notifications: Notification[]; surrenders: Surrender[];
+  zoneEscalations: ZoneEscalation[];
+  resolveEscalation: (id: string, status: "approved" | "rejected") => void;
   roleZones: RoleZoneMatrix;
   roles: RoleDef[];
   navHidden: Record<string, string[]>;                            // Admin — per-role hidden nav paths
@@ -97,6 +99,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>(() => load("aep-notifs", []));
   const [stopList, setStopList] = useState<StopListEntry[]>(() => load("aep-stoplist", STOP_LIST));
   const [surrenders, setSurrenders] = useState<Surrender[]>(() => load("aep-surrenders", SURRENDERS));
+  const [zoneEscalations, setZoneEscalations] = useState<ZoneEscalation[]>(() => load("aep-escalations", ZONE_ESCALATIONS));
+  useEffect(() => { sessionStorage.setItem("aep-escalations", JSON.stringify(zoneEscalations)); }, [zoneEscalations]);
+  const resolveEscalation: DataCtx["resolveEscalation"] = (id, status) => {
+    setZoneEscalations((x) => x.map((e) => (e.id === id ? { ...e, status } : e)));
+    const esc = zoneEscalations.find((e) => e.id === id);
+    log("resolve_escalation", id, `${esc?.subject ?? id}: zone escalation ${status} (${esc?.exceeded.join(" ")})`, status === "approved" ? "ok" : "warn");
+    if (esc) notify("entity", "escalation_" + status, `${esc.subject}: zone escalation for ${esc.exceeded.join(" ")} ${status} (need-to-access).`, status === "approved" ? "ok" : "bad", esc.entityId);
+  };
   const [navHidden, setNavHidden] = useState<Record<string, string[]>>(() => load("aep-navhidden", {}));
   useEffect(() => { sessionStorage.setItem("aep-navhidden", JSON.stringify(navHidden)); }, [navHidden]);
 
@@ -474,6 +484,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, surrenders, roleZones, roles,
+      zoneEscalations, resolveEscalation,
       navHidden, setNavVisible, visibleNav, canSee,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, recordSurrenderJustification, raiseSurrenderPenalty, resolveSurrenderPenalty,

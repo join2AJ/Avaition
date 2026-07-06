@@ -447,6 +447,7 @@
 .vis-cell.on { color: var(--green-700); border-color: var(--green-300); background: color-mix(in srgb, var(--green-700) 10%, transparent); }
 .vis-cell.off { color: var(--text-muted); opacity: 0.55; }
 .vis-cell:hover { border-color: var(--navy-500); }
+.zone-chip.over { background: var(--red-500); color: #fff; }
 .create-role-row { display: flex; flex-direction: column; gap: 8px; }
 .crr-form { display: flex; gap: 10px; max-width: 520px; }
 .crr-form .field { flex: 1; }

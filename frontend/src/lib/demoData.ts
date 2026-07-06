@@ -58,6 +58,19 @@ export const SURPRISE_CHECKS: SurpriseCheck[] = [
 ];
 export const AUDITED_THIS_YEAR = 214; // AEP holders physically audited YTD (20% annual sample · §15)
 
+// Zone escalation requests — a pass that asked for zones beyond entitlement,
+// hard-blocked at creation and routed to BCAS/committee with justification (§need-to-access).
+export interface ZoneEscalation {
+  id: string; entityId: string; subject: string; appId?: string;
+  requested: string[]; exceeded: string[]; justification: string;
+  status: "blocked" | "approved" | "rejected"; since: string; // date + time raised
+}
+export const ZONE_ESCALATIONS: ZoneEscalation[] = [
+  { id: "ESC-01", entityId: "ENT-01", subject: "M. Iyer", appId: "APP-2231", requested: ["A", "D", "T", "P", "Sd"], exceeded: ["P", "Sd"], justification: "Baggage make-up on apron during peak bank — needs P; Sd for domestic SHA reconciliation.", status: "blocked", since: "2026-07-05 11:20" },
+  { id: "ESC-02", entityId: "ENT-03", subject: "S. Khan", appId: "APP-2240", requested: ["T", "P"], exceeded: ["P"], justification: "Hi-loader operation at aircraft stand; letterhead attached.", status: "approved", since: "2026-07-03 09:45" },
+  { id: "ESC-03", entityId: "ENT-05", subject: "A. Reddy", requested: ["Cd", "Csd", "P"], exceeded: ["P"], justification: "Requested apron access not supported by cargo contract scope.", status: "rejected", since: "2026-06-28 15:10" },
+];
+
 export interface StopListEntry { name: string; reason: string; source: string; since: string; }
 // BCAS/Operator-maintained bar list — screened before EVERY issuance (§9).
 export const STOP_LIST: StopListEntry[] = [

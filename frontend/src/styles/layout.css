@@ -448,6 +448,16 @@
 .vis-cell.off { color: var(--text-muted); opacity: 0.55; }
 .vis-cell:hover { border-color: var(--navy-500); }
 .zone-chip.over { background: var(--red-500); color: #fff; }
+
+/* Compliance KPI drill-downs. */
+.kpi-btn { cursor: pointer; text-align: left; border: 1px solid var(--border-hairline); background: var(--surface-card); position: relative; transition: var(--transition); font: inherit; }
+.kpi-btn:hover { border-color: var(--navy-500); transform: translateY(-1px); }
+.kpi-btn.active { border-color: var(--navy-500); box-shadow: 0 0 0 2px color-mix(in srgb, var(--navy-500) 22%, transparent); }
+.kpi-drill-hint { position: absolute; top: 12px; right: 12px; display: inline-flex; align-items: center; gap: 1px; font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; opacity: 0; transition: var(--transition); }
+.kpi-btn:hover .kpi-drill-hint, .kpi-btn.active .kpi-drill-hint { opacity: 0.85; }
+.drill-panel { border-color: var(--navy-500); animation: drill-in 0.25s var(--ease-cruise, ease); }
+@keyframes drill-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.drill-calc { margin: 0 16px 12px; padding: 10px 14px; background: var(--surface-sunken); border-radius: var(--radius-md); font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); }
 .create-role-row { display: flex; flex-direction: column; gap: 8px; }
 .crr-form { display: flex; gap: 10px; max-width: 520px; }
 .crr-form .field { flex: 1; }

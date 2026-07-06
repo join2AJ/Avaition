@@ -1,9 +1,12 @@
-import { useMemo } from "react";
-import { ShieldCheck, ShieldAlert, TimerReset, Ban, Gauge, PauseCircle, TrendingUp, ClipboardCheck } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { ShieldCheck, ShieldAlert, TimerReset, Ban, Gauge, PauseCircle, TrendingUp, ClipboardCheck, X, ChevronRight } from "lucide-react";
 import { useData } from "@/app/data";
-import { expiringWithin } from "@/lib/api";
+import { expiringWithin, entityName } from "@/lib/api";
 import { SURPRISE_CHECKS, AUDITED_THIS_YEAR } from "@/lib/demoData";
-import { Pill } from "@/components/ui";
+import { STATUS_META } from "@/domain/status";
+import { Pill, PillarBadge } from "@/components/ui";
+import type { Application } from "@/domain/types";
 
 // The core insight surface for BCAS and the Aerodrome Operator: compliance vs
 // non-compliance across entities, passes and SLAs.
@@ -27,17 +30,21 @@ export default function Compliance() {
   const complianceRate = Math.round((compliantCount / Math.max(1, entities.length)) * 100);
   const nonCompliant = entityCompliance.filter((x) => !x.compliant);
 
-  const exp30 = expiringWithin(applications, 30).length;
+  const [drill, setDrill] = useState<string | null>(null);
+  const exp30List = expiringWithin(applications, 30);
+  const exp30 = exp30List.length;
   const exp14 = expiringWithin(applications, 14).length;
   const exp3 = expiringWithin(applications, 3).length;
   // SLA is the processing-turnaround metric — only in-flight applications count.
   // Post-issue lifecycle holds (parked / deactivated) and cancellations
   // (withdrawn) are governance states, surfaced on their own tiles.
-  const atRisk = applications.filter((a) => a.status === "clarification").length;
-  const held = applications.filter((a) => a.status === "parked" || a.status === "deactivated").length;
-  const withdrawn = applications.filter((a) => a.status === "withdrawn").length;
-  const overdueSurrender = applications.filter((a) => a.status === "surrendered").length;
-  const terminatedContracts = contracts.filter((c) => c.status === "terminated").length;
+  const atRiskList = applications.filter((a) => a.status === "clarification");
+  const heldList = applications.filter((a) => a.status === "parked" || a.status === "deactivated");
+  const withdrawnList = applications.filter((a) => a.status === "withdrawn");
+  const surrenderList = applications.filter((a) => a.status === "surrendered");
+  const terminatedList = contracts.filter((c) => c.status === "terminated");
+  const atRisk = atRiskList.length, held = heldList.length, withdrawn = withdrawnList.length;
+  const overdueSurrender = surrenderList.length, terminatedContracts = terminatedList.length;
 
   const zoneDist = useMemo(() => {
     const m: Record<string, number> = {};
@@ -76,39 +83,34 @@ export default function Compliance() {
       </div>
 
       <div className="kpi-grid stagger">
-        <div className="card kpi" style={{ ["--kpi-accent" as string]: complianceRate >= 80 ? "var(--green-700)" : "var(--amber-500)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: complianceRate >= 80 ? "var(--green-700)" : "var(--amber-500)" }}><Gauge size={18} /></span><span className="kpi-value">{complianceRate}%</span></div>
-          <div className="kpi-label">Entity compliance rate</div>
-        </div>
-        <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--red-500)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--red-500)" }}><ShieldAlert size={18} /></span><span className="kpi-value">{nonCompliant.length}</span></div>
-          <div className="kpi-label">Non-compliant entities</div>
-        </div>
-        <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--amber-500)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--amber-500)" }}><TimerReset size={18} /></span><span className="kpi-value">{exp30}</span></div>
-          <div className="kpi-label">Passes expiring ≤ 30d</div>
-        </div>
-        <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--amber-500)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--amber-500)" }}><PauseCircle size={18} /></span><span className="kpi-value">{held}</span></div>
-          <div className="kpi-label">Parked / deactivated</div>
-        </div>
-        <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--red-500)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--red-500)" }}><Ban size={18} /></span><span className="kpi-value">{withdrawn}</span></div>
-          <div className="kpi-label">Withdrawn (§11)</div>
-        </div>
-        <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--amber-500)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--amber-500)" }}><ShieldAlert size={18} /></span><span className="kpi-value">{atRisk}</span></div>
-          <div className="kpi-label">SLA at risk (clarification)</div>
-        </div>
-        <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--ink-400)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--ink-400)" }}><Ban size={18} /></span><span className="kpi-value">{overdueSurrender}</span></div>
-          <div className="kpi-label">Surrendered / late</div>
-        </div>
-        <div className="card kpi" style={{ ["--kpi-accent" as string]: "var(--red-500)" }}>
-          <div className="kpi-row"><span className="kpi-icon" style={{ background: "var(--red-500)" }}><Ban size={18} /></span><span className="kpi-value">{terminatedContracts}</span></div>
-          <div className="kpi-label">Terminated contracts</div>
-        </div>
+        {([
+          ["rate", complianceRate >= 80 ? "var(--green-700)" : "var(--amber-500)", Gauge, `${complianceRate}%`, "Entity compliance rate"],
+          ["noncompliant", "var(--red-500)", ShieldAlert, nonCompliant.length, "Non-compliant entities"],
+          ["exp30", "var(--amber-500)", TimerReset, exp30, "Passes expiring ≤ 30d"],
+          ["held", "var(--amber-500)", PauseCircle, held, "Parked / deactivated"],
+          ["withdrawn", "var(--red-500)", Ban, withdrawn, "Withdrawn (§11)"],
+          ["atrisk", "var(--amber-500)", ShieldAlert, atRisk, "SLA at risk (clarification)"],
+          ["surrender", "var(--ink-400)", Ban, overdueSurrender, "Surrendered / late"],
+          ["terminated", "var(--red-500)", Ban, terminatedContracts, "Terminated contracts"],
+        ] as const).map(([key, accent, Icon, value, label]) => (
+          <button key={key} className={`card kpi kpi-btn ${drill === key ? "active" : ""}`} style={{ ["--kpi-accent" as string]: accent }}
+            onClick={() => setDrill(drill === key ? null : key)}>
+            <div className="kpi-row"><span className="kpi-icon" style={{ background: accent }}><Icon size={18} /></span><span className="kpi-value">{value}</span></div>
+            <div className="kpi-label">{label}</div>
+            <span className="kpi-drill-hint">{drill === key ? "hide" : "view"} <ChevronRight size={11} /></span>
+          </button>
+        ))}
       </div>
+
+      {drill && (
+        <ComplianceDrill
+          drill={drill} onClose={() => setDrill(null)} entities={entities}
+          complianceRate={complianceRate} compliantCount={compliantCount} entityTotal={entities.length}
+          nonCompliant={nonCompliant} exp30List={exp30List} heldList={heldList}
+          withdrawnList={withdrawnList} atRiskList={atRiskList} surrenderList={surrenderList}
+          terminatedList={terminatedList}
+        />
+      )}
 
       <div className="dash-grid">
         <section className="card">
@@ -213,5 +215,122 @@ export default function Compliance() {
         </div>
       </section>
     </div>
+  );
+}
+
+type EC = { e: import("@/domain/types").Entity; expired: number; pending: number };
+
+/** Drill-down panel — reveals the records behind a clicked KPI tile, with the
+ *  calculation that produced the number. */
+function ComplianceDrill(props: {
+  drill: string; onClose: () => void; entities: import("@/domain/types").Entity[];
+  complianceRate: number; compliantCount: number; entityTotal: number;
+  nonCompliant: EC[]; exp30List: Application[]; heldList: Application[];
+  withdrawnList: Application[]; atRiskList: Application[]; surrenderList: Application[];
+  terminatedList: import("@/domain/types").Contract[];
+}) {
+  const { drill, onClose, entities } = props;
+  const nm = (id: string) => entityName(id, entities);
+
+  const AppTable = ({ rows, note }: { rows: Application[]; note?: string }) => (
+    <>
+      <div className="matrix-scroll">
+        <table className="sur-table">
+          <thead><tr><th>Pass</th><th>Holder / item</th><th>Pillar</th><th>Entity</th><th>Status</th><th>Valid to</th></tr></thead>
+          <tbody>
+            {rows.map((a) => (
+              <tr key={a.id}>
+                <td className="mono"><Link to={`/app/applications/${a.id}`}>{a.id}</Link></td>
+                <td><b>{a.subject}</b></td>
+                <td><PillarBadge pillar={a.pillar} /> <span className="mono">{a.passType}</span></td>
+                <td className="muted">{nm(a.entityId)}</td>
+                <td><Pill tone={STATUS_META[a.status].tone} dot>{STATUS_META[a.status].label}</Pill></td>
+                <td className="mono">{a.expiryDate || a.validTo || "—"}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && <tr><td colSpan={6} className="reg-empty muted">Nothing in this bucket.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      {note && <p className="muted" style={{ fontSize: 12, padding: "10px 16px 0" }}>{note}</p>}
+    </>
+  );
+
+  const MAP: Record<string, { title: string; calc: string; body: JSX.Element }> = {
+    rate: {
+      title: "Entity compliance rate — how it's calculated",
+      calc: `compliant ÷ total entities = ${props.compliantCount} ÷ ${props.entityTotal} = ${props.complianceRate}%. An entity counts as compliant only when it is active AND has no expired mandatory document (Security Programme, Clearance, AOP/NSOP, NCASP, Contract).`,
+      body: (
+        <div className="matrix-scroll">
+          <table className="sur-table">
+            <thead><tr><th>Entity</th><th>Status</th><th>Expired docs</th><th>Pending docs</th><th>Verdict</th></tr></thead>
+            <tbody>
+              {entities.map((e) => {
+                const nc = props.nonCompliant.find((x) => x.e.id === e.id);
+                const ok = !nc;
+                return (
+                  <tr key={e.id}>
+                    <td><b>{e.name}</b></td>
+                    <td><Pill tone={e.status === "active" ? "green" : "amber"} dot>{e.status}</Pill></td>
+                    <td>{nc?.expired ?? 0}</td><td>{nc?.pending ?? 0}</td>
+                    <td><Pill tone={ok ? "green" : "red"} dot>{ok ? "compliant" : "non-compliant"}</Pill></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ),
+    },
+    noncompliant: {
+      title: "Non-compliant entities",
+      calc: `Entities that are suspended/archived OR hold ≥ 1 expired mandatory document. Count = ${props.nonCompliant.length}.`,
+      body: (
+        <div className="register">
+          {props.nonCompliant.map(({ e, expired, pending }) => (
+            <div className="reg-row nc-row" key={e.id}>
+              <span className="reg-subject">{e.name}</span><span className="muted">{e.category}</span>
+              <Pill tone={e.status === "active" ? "amber" : "red"} dot>{e.status}</Pill>
+              {expired > 0 && <Pill tone="red">{expired} expired</Pill>}
+              {pending > 0 && <Pill tone="amber">{pending} pending</Pill>}
+            </div>
+          ))}
+          {props.nonCompliant.length === 0 && <div className="reg-empty muted">All entities compliant.</div>}
+        </div>
+      ),
+    },
+    exp30: { title: "Passes expiring within 30 days", calc: `Issued passes whose valid-to / expiry date is within 30 days of today. Renew from day 30. Count = ${props.exp30List.length}.`, body: <AppTable rows={props.exp30List} /> },
+    held: { title: "Parked / deactivated passes", calc: `Issued passes on a reversible hold — Parked (§10.6, 60-day non-use) or Deactivated (compliance hold, e.g. AVSEC lapse §13). Count = ${props.heldList.length}.`, body: <AppTable rows={props.heldList} /> },
+    withdrawn: { title: "Withdrawn passes (§11)", calc: `Passes permanently cancelled on adverse BGC / disciplinary action. Holder is Stop-Listed. Count = ${props.withdrawnList.length}.`, body: <AppTable rows={props.withdrawnList} /> },
+    atrisk: { title: "SLA at risk — in clarification", calc: `In-flight applications returned to the clarification queue; the processing SLA clock keeps running. Count = ${props.atRiskList.length}.`, body: <AppTable rows={props.atRiskList} /> },
+    surrender: { title: "Surrendered / late", calc: `Passes surrendered (voluntary return) or moved to surrender via termination. Late = not returned within 7 days of exit (§10.7). Count = ${props.surrenderList.length}.`, body: <AppTable rows={props.surrenderList} note="Late-surrender penalties are tracked on the Surrenders & penalties page." /> },
+    terminated: {
+      title: "Terminated contracts",
+      calc: `Contracts ended early; their passes cascade to surrender and all parties are intimated (§10.3). Count = ${props.terminatedList.length}.`,
+      body: (
+        <div className="register">
+          {props.terminatedList.map((c) => (
+            <div className="reg-row" key={c.id}>
+              <span className="mono reg-id">{c.id}</span><span className="reg-subject">{c.counterparty}</span>
+              <span className="muted">{nm(c.entityId)}</span><Pill tone="red" dot>{c.status}</Pill>
+            </div>
+          ))}
+          {props.terminatedList.length === 0 && <div className="reg-empty muted">No terminated contracts.</div>}
+        </div>
+      ),
+    },
+  };
+
+  const d = MAP[drill];
+  if (!d) return null;
+  return (
+    <section className="card drill-panel">
+      <div className="card-head card-pad" style={{ paddingBottom: 8 }}>
+        <span className="section-title">{d.title}</span>
+        <button className="btn btn-ghost mini-btn" onClick={onClose}><X size={14} /> Close</button>
+      </div>
+      <div className="drill-calc"><b>Calculation:</b> {d.calc}</div>
+      {d.body}
+    </section>
   );
 }

@@ -58,6 +58,7 @@ interface DataCtx {
   visibleNav: (role: Role) => NavItem[];                          // effective nav after access-control overrides
   canSee: (role: Role, path: string) => boolean;                  // route authorization incl. overrides
   isTabHidden: (role: Role, key: string) => boolean;              // sub-tab visibility (key = `${path}#${sub}`)
+  notificationsFor: (role: Role, entityId?: string) => Notification[]; // audience + entity-scoped notifications
   createEntity: (e: NewEntity) => Entity;
   createIndividual: (i: NewIndividual) => Individual;
   createApplication: (a: NewApplication) => Application;
@@ -143,6 +144,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (role === "admin") return false;                      // Admin sees every sub-tab
     return (navHidden[role] ?? []).includes(key);
   };
+  // Notifications a login may see — scoped by audience and (for entity/individual)
+  // by their own entity. Shared by the bell and the Notifications page.
+  const NOTIF_AUDIENCE: Record<string, string[]> = {
+    admin: ["entity", "bcas", "individual", "operator"],
+    bcas: ["bcas", "entity", "individual", "operator"],
+    operator: ["operator", "entity", "individual", "bcas"],
+    entity: ["entity"], others: ["entity"], individual: ["individual"], cisf: [],
+  };
+  const notificationsFor: DataCtx["notificationsFor"] = (role, entityId) => {
+    const allowed = NOTIF_AUDIENCE[role] ?? [];
+    const scoped = ["entity", "others", "individual"].includes(role);
+    return notifications.filter((n) => allowed.includes(n.to) && (!scoped || !n.entityId || n.entityId === entityId));
+  };
   useEffect(() => { sessionStorage.setItem("aep-stoplist", JSON.stringify(stopList)); }, [stopList]);
   useEffect(() => { sessionStorage.setItem("aep-surrenders", JSON.stringify(surrenders)); }, [surrenders]);
 
@@ -217,7 +231,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (events.length) {
       setNotifications((prev) => {
         const have = new Set(prev.map((n) => n.id));
-        const add = events.filter((e) => !have.has(e.id)).map((e) => ({ id: e.id, ts: now(), to: e.to, entityId: e.entityId, type: "expiry", message: e.message, tone: e.tone, read: false }));
+        const add = events.filter((e) => !have.has(e.id)).map((e) => ({ id: e.id, ts: now(), to: e.to, entityId: e.entityId, source: "System", type: "expiry", message: e.message, tone: e.tone, read: false }));
         return add.length ? [...add, ...prev] : prev;
       });
     }
@@ -231,8 +245,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setRoleZones_((m) => ({ ...m, [role]: zones }));
     log("edit_role_zones", role, `Role zone-need set to ${zones.join(" ") || "—"}`);
   };
-  const notify = (to: string, type: string, message: string, tone: Notification["tone"] = "warn", entityId?: string) => {
-    setNotifications((n) => [{ id: `NTF-${Date.now()}-${Math.floor(Math.random() * 1000)}`, ts: now(), to, entityId, type, message, tone, read: false }, ...n]);
+  // Who is pushing a notification — derived from the acting login unless the
+  // caller marks it System (auto-generated, e.g. the expiry scan).
+  const sourceForRole = (r?: string) =>
+    r === "bcas" ? "BCAS" : r === "operator" ? "Pass Section" : r === "admin" ? "Admin" : (r === "entity" || r === "others") ? "Entity" : "System";
+  const notify = (to: string, type: string, message: string, tone: Notification["tone"] = "warn", entityId?: string, source?: string) => {
+    const src = source ?? sourceForRole(session?.role);
+    setNotifications((n) => [{ id: `NTF-${Date.now()}-${Math.floor(Math.random() * 1000)}`, ts: now(), to, entityId, source: src, type, message, tone, read: false }, ...n]);
   };
   const markNotificationsRead: DataCtx["markNotificationsRead"] = () => setNotifications((n) => n.map((x) => ({ ...x, read: true })));
 
@@ -498,7 +517,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, surrenders, roleZones, roles,
       zoneEscalations, resolveEscalation,
-      navHidden, setNavVisible, visibleNav, canSee, isTabHidden,
+      navHidden, setNavVisible, visibleNav, canSee, isTabHidden, notificationsFor,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, recordSurrenderJustification, raiseSurrenderPenalty, resolveSurrenderPenalty,
       applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,

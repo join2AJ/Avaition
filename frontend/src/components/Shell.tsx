@@ -10,29 +10,12 @@ import { PILLARS } from "@/domain/types";
 export default function Shell({ children }: { children: ReactNode }) {
   const { session, signOut } = useAuth();
   const { theme, toggle } = useTheme();
-  const { notifications, markNotificationsRead, visibleNav } = useData();
+  const { markNotificationsRead, visibleNav, notificationsFor } = useData();
   const nav = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [q, setQ] = useState("");
-  // Audience scoping — a role only sees notifications addressed to it. Aerodrome
-  // staff (admin/operator/bcas) oversee the pipeline; an entity/individual login
-  // must not see internal BCAS/operator traffic or other audiences' messages.
-  const AUDIENCE: Record<string, string[]> = {
-    admin: ["entity", "bcas", "individual", "operator"],
-    bcas: ["bcas", "entity", "individual", "operator"],
-    operator: ["operator", "entity", "individual", "bcas"],
-    entity: ["entity"],
-    others: ["entity"],
-    individual: ["individual"],
-    cisf: [],
-  };
-  const allowed = AUDIENCE[session?.role ?? ""] ?? [];
-  // Entity-side logins additionally only see notifications tied to their own
-  // entity (or broadcast ones with no entityId); oversight roles see all.
-  const scoped = ["entity", "others", "individual"].includes(session?.role ?? "");
-  const myNotifs = notifications.filter((n) =>
-    allowed.includes(n.to) && (!scoped || !n.entityId || n.entityId === session?.entityId));
+  const myNotifs = session ? notificationsFor(session.role, session.entityId) : [];
   const unread = myNotifs.filter((n) => !n.read).length;
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -120,13 +103,14 @@ export default function Shell({ children }: { children: ReactNode }) {
                   <div className="notif-head">Notifications <span className="muted">{myNotifs.length}</span></div>
                   <div className="notif-list">
                     {myNotifs.length === 0 && <div className="notif-empty muted">No notifications yet.</div>}
-                    {myNotifs.slice(0, 12).map((n) => (
+                    {myNotifs.slice(0, 10).map((n) => (
                       <div className={`notif-item ${n.tone}`} key={n.id}>
                         <span className="notif-to mono">{n.to}</span>
-                        <div>{n.message}<div className="notif-ts mono">{n.ts}</div></div>
+                        <div>{n.message}<div className="notif-ts mono">{n.source ? `${n.source} · ` : ""}{n.ts}</div></div>
                       </div>
                     ))}
                   </div>
+                  <button className="notif-viewall" onClick={() => { setShowNotifs(false); nav("/app/notifications"); }}>View all notifications →</button>
                 </div>
               )}
             </div>

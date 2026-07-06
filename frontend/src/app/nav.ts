@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FileStack, CalendarClock, ShieldAlert,
-  IdCard, Users, Map, ScrollText, ScanSearch, PlusCircle, Timer, ClipboardCheck, FileSignature, Gauge, Ban, Info, type LucideIcon,
+  IdCard, Users, Map, ScrollText, ScanSearch, PlusCircle, Timer, ClipboardCheck, FileSignature, Gauge, Ban, Info, Bell, type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/domain/types";
 
@@ -27,6 +27,7 @@ const ALL: Record<string, NavItem> = {
   users: { to: "/app/users", label: "Users & roles", icon: Users },
   validity: { to: "/app/validity", label: "Validity matrix", icon: Timer },
   status: { to: "/app/status", label: "Entity & individual status", icon: ClipboardCheck },
+  notifications: { to: "/app/notifications", label: "Notifications", icon: Bell },
   information: { to: "/app/information", label: "Information", icon: Info },
   audit: { to: "/app/audit", label: "Audit log", icon: ScrollText },
   verify: { to: "/app/verify", label: "Verify pass", icon: ScanSearch },
@@ -75,11 +76,11 @@ export function canAccess(role: Role, path: string): boolean {
 }
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.information, ALL.users, ALL.audit],
-  bcas: [ALL.dashboard, ALL.compliance, ALL.applications, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.information, ALL.users, ALL.audit],
-  operator: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.information, ALL.users],
+  admin: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users, ALL.audit],
+  bcas: [ALL.dashboard, ALL.compliance, ALL.applications, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users, ALL.audit],
+  operator: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users],
   cisf: [ALL.verify],
-  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.contracts, ALL.information, ALL.profile],
-  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.contracts, ALL.information, ALL.profile],
-  individual: [ALL.dashboard, ALL.applications, ALL.information],
+  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.contracts, ALL.notifications, ALL.information, ALL.profile],
+  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.contracts, ALL.notifications, ALL.information, ALL.profile],
+  individual: [ALL.dashboard, ALL.applications, ALL.notifications, ALL.information],
 };

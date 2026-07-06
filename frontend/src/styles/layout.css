@@ -471,6 +471,26 @@
 .req-legend-n { margin-left: 4px; font-weight: 700; font-family: var(--font-mono); }
 :root[data-theme="dark"] .req-legend-item.tone-red { color: #f6a5a5; }
 :root[data-theme="dark"] .req-legend-item.tone-teal { color: #74d6e2; }
+
+/* Notifications page. */
+.notif-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip-toggle { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong); background: var(--surface-card); font-size: 12.5px; font-weight: 600; color: var(--text-secondary); transition: var(--transition); }
+.chip-toggle:hover { border-color: var(--navy-500); }
+.chip-toggle.on { background: var(--navy-500); color: #fff; border-color: var(--navy-500); }
+.chip-toggle-n { font-family: var(--font-mono); font-size: 11px; opacity: 0.8; }
+.notif-feed { display: flex; flex-direction: column; }
+.notif-feed-row { display: grid; grid-template-columns: 130px 1fr; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border-hairline); align-items: start; }
+.notif-feed-row:last-child { border-bottom: none; }
+.notif-feed-row.unread { background: color-mix(in srgb, var(--navy-500) 5%, transparent); }
+.notif-src-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 700; height: fit-content; white-space: nowrap; }
+.notif-feed-msg { font-size: 13.5px; line-height: 1.5; color: var(--text-body); }
+.notif-feed-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
+.notif-aud { text-transform: uppercase; letter-spacing: 0.04em; }
+.notif-unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--navy-500); }
+.notif-viewall { display: block; width: 100%; text-align: center; padding: 10px; background: var(--surface-sunken); border: none; border-top: 1px solid var(--border-hairline); color: var(--navy-500); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.notif-viewall:hover { background: var(--blue-100); }
+@media (max-width: 560px) { .notif-feed-row { grid-template-columns: 1fr; gap: 6px; } }
 .access-na { color: var(--text-muted); opacity: 0.4; }
 .vis-cell { display: inline-grid; place-items: center; width: 30px; height: 26px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface-card); cursor: pointer; transition: var(--transition); }
 .vis-cell.on { color: var(--green-700); border-color: var(--green-300); background: color-mix(in srgb, var(--green-700) 10%, transparent); }

@@ -75,6 +75,7 @@ export interface Notification {
   ts: string;
   to: string;               // audience: entity / bcas / individual / operator
   entityId?: string;        // when set, only that entity's login sees it (else broadcast to the audience)
+  source?: string;          // who pushed it: BCAS / Pass Section / Admin / Entity / System (auto)
   type: string;
   message: string;
   tone: "ok" | "warn" | "bad";

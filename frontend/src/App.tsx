@@ -16,6 +16,7 @@ import Contracts from "./pages/Contracts";
 import StopList from "./pages/StopList";
 import Committees from "./pages/Committees";
 import Information from "./pages/Information";
+import Notifications from "./pages/Notifications";
 import Penalties from "./pages/Penalties";
 import Users from "./pages/Users";
 import Audit from "./pages/Audit";
@@ -65,6 +66,7 @@ export default function App() {
                 <Route path="stop-list" element={<StopList />} />
                 <Route path="committees" element={<Committees />} />
                 <Route path="information" element={<Information />} />
+                <Route path="notifications" element={<Notifications />} />
                 <Route path="penalties" element={<Penalties />} />
                 <Route path="profile" element={<Placeholder title="Entity profile" note="Live compliance status: Security Programme, Clearance, contract validity, NCASP, AOP linkage, dynamic category docs." />} />
                 <Route path="users" element={<Users />} />

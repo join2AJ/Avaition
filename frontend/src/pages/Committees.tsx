@@ -8,19 +8,18 @@ import { useData } from "@/app/data";
 import { today } from "@/domain/entitlements";
 import { PillarBadge, Pill } from "@/components/ui";
 
-// The committee processing chain — Pass Section verifies, forwards to BCAS for
-// scrutiny; BCAS returns to Pass Section or another selected agency; records
-// updated; printed; BCAS verifies hard cards; operator distributes; individuals
-// cross-sign.
+// The committee processing chain (§8.3.3) — one card per step, each explaining
+// who owns it and what actually happens, so a first-timer can follow the file
+// from Pass Section all the way to the holder's hand.
 const COMMITTEE_STAGES = [
-  "Pass Section verification",
-  "Forwarded to BCAS",
-  "BCAS committee scrutiny",
-  "Returned to agency",
-  "Records updated & submitted",
-  "Printing",
-  "BCAS hard-card verification",
-  "Operator distribution + cross-sign",
+  { n: 1, title: "Pass Section verification", owner: "Pass Section", what: "Checklist + Stop List cleared; the file is built and confirmed complete.", clause: "§8.3.2" },
+  { n: 2, title: "Forwarded to BCAS", owner: "Airport Operator", what: "Operator scrutinises and forwards the committee-ready file to RD BCAS with a recommendation.", clause: "§8.3.3" },
+  { n: 3, title: "BCAS committee scrutiny", owner: "RD BCAS + CASO/ASG + Airport Director", what: "The AEP Committee reviews the file (fortnightly) and decides — approve or return.", clause: "§8.3.3" },
+  { n: 4, title: "Returned to agency", owner: "RD BCAS", what: "Decision returns to the Pass Section or another BCAS-selected agency for action.", clause: "§8.3.3" },
+  { n: 5, title: "Records updated & submitted", owner: "Pass Section", what: "Approved particulars are recorded and the print request is submitted.", clause: "§8.3.3" },
+  { n: 6, title: "Printing", owner: "Airport Operator", what: "The biometric card is printed against the approved record.", clause: "§15" },
+  { n: 7, title: "BCAS hard-card verification", owner: "RD BCAS", what: "The printed hard card is verified against the file before release.", clause: "§15" },
+  { n: 8, title: "Operator distribution + cross-sign", owner: "Airport Director", what: "Custodian issues the card; the holder signs for it and each shift is logged.", clause: "§15" },
 ];
 
 export default function Committees() {
@@ -71,17 +70,25 @@ export default function Committees() {
         </section>
       )}
 
-      <section className="card card-pad">
-        <div className="card-head"><span className="section-title">Committee processing chain</span><span className="muted" style={{ fontSize: 12 }}>§8.3.3 · verification → scrutiny → print → distribution</span></div>
-        <div className="chain">
-          {COMMITTEE_STAGES.map((s, i) => (
-            <span className="chain-node" key={s}>
-              <span className="chain-dot">{i + 1}</span><span className="chain-label">{s}</span>
-              {i < COMMITTEE_STAGES.length - 1 && <ArrowRight size={13} className="chain-arrow muted" />}
-            </span>
-          ))}
+      <section className="cmte-chain-head">
+        <div className="card-head" style={{ marginBottom: 4 }}>
+          <span className="section-title">Committee processing chain</span>
+          <span className="muted" style={{ fontSize: 12 }}>§8.3.3 · verification → scrutiny → print → distribution</span>
         </div>
       </section>
+      <div className="chain-cards stagger">
+        {COMMITTEE_STAGES.map((s) => (
+          <div className="chain-card" key={s.n}>
+            <div className="chain-card-top">
+              <span className="chain-card-n">{String(s.n).padStart(2, "0")}</span>
+              <span className="badge-clause">{s.clause}</span>
+            </div>
+            <div className="chain-card-title">{s.title}</div>
+            <div className="chain-card-what">{s.what}</div>
+            <div className="chain-card-owner"><Users2 size={12} /> {s.owner}</div>
+          </div>
+        ))}
+      </div>
 
       <div className="cmte-grid">
         {committees.map((c) => (

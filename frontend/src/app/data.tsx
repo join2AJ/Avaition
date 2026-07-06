@@ -112,7 +112,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // Admin access-control: hide/show any nav destination for any login. Drives
   // both the sidebar and the route guard so hidden pages are truly unreachable.
+  // GUARD: the Admin role is immune — its access can never be revoked, so an
+  // Admin can never lock itself (or another Admin) out of Users / access control.
   const setNavVisible: DataCtx["setNavVisible"] = (role, to, visible) => {
+    if (role === "admin" && !visible) {
+      log("access_revoke_blocked", "admin", `Refused to hide ${to} — Admin access cannot be revoked`, "warn");
+      return;
+    }
     setNavHidden((m) => {
       const cur = new Set(m[role] ?? []);
       visible ? cur.delete(to) : cur.add(to);
@@ -121,11 +127,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     log("edit_access", role, `${visible ? "granted" : "hid"} ${to} for ${role}`);
   };
   const visibleNav: DataCtx["visibleNav"] = (role) => {
+    if (role === "admin") return NAV_BY_ROLE.admin ?? [];   // Admin always sees everything
     const hidden = new Set(navHidden[role] ?? []);
     return (NAV_BY_ROLE[role] ?? []).filter((i) => !hidden.has(i.to));
   };
   const canSee: DataCtx["canSee"] = (role, path) => {
     if (!baseCanAccess(role, path)) return false;
+    if (role === "admin") return true;                       // Admin route access is never revoked
     const hidden = new Set(navHidden[role] ?? []);
     const item = (NAV_BY_ROLE[role] ?? []).find((i) => (i.to === "/app" ? path === "/app" : path === i.to || path.startsWith(i.to + "/")));
     return item ? !hidden.has(item.to) : true;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, ShieldAlert, Check, Users2, SlidersHorizontal, Eye, EyeOff } from "lucide-react";
+import { Plus, ShieldAlert, Check, Users2, SlidersHorizontal, Eye, EyeOff, Lock } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useSettings } from "@/app/settings";
 import { useData } from "@/app/data";
@@ -132,6 +132,11 @@ function AccessControl() {
                   <td className="mx-vert"><item.icon size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} />{item.label}</td>
                   {MATRIX_ROLES.map((role) => {
                     if (!inBase(role, item.to)) return <td key={role} className="access-na">—</td>;
+                    if (role === "admin") return (
+                      <td key={role}>
+                        <span className="vis-cell locked" title="Admin access is always on and cannot be revoked"><Lock size={12} /></span>
+                      </td>
+                    );
                     const hidden = isHidden(role, item.to);
                     return (
                       <td key={role}>
@@ -147,7 +152,7 @@ function AccessControl() {
             </tbody>
           </table>
         </div>
-        <p className="muted" style={{ fontSize: 11.5, padding: "0 16px 14px" }}>“—” means the tab is not part of that login’s role. Changes apply instantly to the sidebar and the route guard.</p>
+        <p className="muted" style={{ fontSize: 11.5, padding: "0 16px 14px" }}>“—” means the tab is not part of that login’s role. <Lock size={11} style={{ verticalAlign: "-1px" }} /> Admin access is always on and cannot be revoked. Changes apply instantly to the sidebar and the route guard.</p>
       </section>
 
       <section className="card card-pad access-card">

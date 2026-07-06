@@ -446,7 +446,8 @@
 .vis-cell { display: inline-grid; place-items: center; width: 30px; height: 26px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface-card); cursor: pointer; transition: var(--transition); }
 .vis-cell.on { color: var(--green-700); border-color: var(--green-300); background: color-mix(in srgb, var(--green-700) 10%, transparent); }
 .vis-cell.off { color: var(--text-muted); opacity: 0.55; }
-.vis-cell:hover { border-color: var(--navy-500); }
+.vis-cell.locked { cursor: not-allowed; color: var(--text-muted); background: var(--surface-sunken); border-style: dashed; }
+button.vis-cell:hover { border-color: var(--navy-500); }
 .zone-chip.over { background: var(--red-500); color: #fff; }
 
 /* Compliance KPI drill-downs. */

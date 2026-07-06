@@ -34,7 +34,7 @@
   --surface-app: var(--cloud-100); --surface-card: var(--white);
   --surface-sunken: var(--cloud-150); --surface-nav: var(--navy-800); --surface-comm: var(--navy-700);
   --text-strong: var(--ink-900); --text-body: var(--ink-700); --text-secondary: var(--ink-500);
-  --text-muted: var(--ink-300); --text-on-dark: var(--cloud-50); --text-link: var(--navy-500);
+  --text-muted: #5d6883; --text-on-dark: var(--cloud-50); --text-link: var(--navy-500);
   --border-hairline: var(--cloud-200); --border-strong: var(--cloud-300); --border-focus: var(--navy-500);
   --action-primary: var(--navy-500); --action-primary-hover: #0e3ca0; --accent: var(--blue-400);
   --status-clear: var(--green-700); --status-caution: var(--amber-500);
@@ -78,16 +78,45 @@
 }
 
 :root[data-theme="dark"] {
-  --surface-app: #060d1c; --surface-card: #0c1730; --surface-sunken: #0a1428;
-  --text-strong: #eef3fb; --text-body: #dbe4f1; --text-secondary: #9fb0c4; --text-muted: #6c7d93;
-  --border-hairline: #17233c; --border-strong: #223350;
-  --blue-100: #16294b; --green-100: #0e2e1e; --amber-100: #33260f; --red-100: #331717; --violet-100: #221b3d; --cyan-100: #0e2e2e;
-  --cloud-150: #101d33; --cloud-200: #17233c; --cloud-300: #223350;
+  --surface-app: #070f20; --surface-card: #0e1a35; --surface-sunken: #0b1730;
+  --surface-nav: #0a1428; --surface-comm: #0c1830;
+  --text-strong: #f2f6fc; --text-body: #dde6f3; --text-secondary: #aebdd0; --text-muted: #8fa0b8;
+  --border-hairline: #1c2942; --border-strong: #2a3c5c;
+  /* Soft status backgrounds — a touch lighter so pill text reads clearly. */
+  --blue-100: #172c50; --green-100: #103526; --amber-100: #3a2c12; --red-100: #3a1a1a; --violet-100: #271f45; --cyan-100: #113334;
+  --cloud-150: #111f38; --cloud-200: #1c2942; --cloud-300: #2a3c5c;
   --status-clear-soft: var(--green-100); --status-caution-soft: var(--amber-100);
   --status-stop-soft: var(--red-100); --status-info-soft: var(--blue-100);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow: 0 10px 30px rgba(0, 0, 0, 0.5); --shadow-lg: 0 22px 56px rgba(0, 0, 0, 0.62);
-  --slate-soft: #101d33;
+  --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.35);
+  --slate-soft: #16223c; --action-primary: #2a63d8; --action-primary-hover: #3b74e8; --border-focus: var(--blue-400);
+  --text-link: var(--blue-300);
 }
+
+/* Dark-mode legibility: status pills, clause badges, CRUD cells and role flags
+   must use LIGHT foregrounds on their soft dark backgrounds. */
+:root[data-theme="dark"] .tone-blue { color: var(--blue-200); }
+:root[data-theme="dark"] .tone-green { color: var(--green-300); }
+:root[data-theme="dark"] .tone-amber { color: #f2b872; }
+:root[data-theme="dark"] .tone-red { color: #f6a5a5; }
+:root[data-theme="dark"] .tone-violet { color: #c6b6f7; }
+:root[data-theme="dark"] .tone-teal { color: #74d6e2; }
+:root[data-theme="dark"] .tone-slate { color: var(--text-secondary); }
+:root[data-theme="dark"] .tone-ink { background: #1c2c48; color: var(--text-strong); }
+:root[data-theme="dark"] .badge-clause { color: var(--blue-200); }
+:root[data-theme="dark"] .crud-cell.on { color: var(--green-300); }
+:root[data-theme="dark"] .role-flag { color: #f6a5a5; }
+:root[data-theme="dark"] .role-custom { color: var(--blue-200); }
+:root[data-theme="dark"] .flag-banner { color: #f6a5a5; border-color: #4a2626; }
+:root[data-theme="dark"] .stop-hit,
+:root[data-theme="dark"] .sla-breach { color: #f6a5a5; }
+:root[data-theme="dark"] .vis-cell.on { color: var(--green-300); }
+:root[data-theme="dark"] .chip-f { color: var(--blue-200); }
+:root[data-theme="dark"] .action-chip.tone-red { color: #f6a5a5; }
+:root[data-theme="dark"] .action-chip.tone-amber { color: #f2b872; }
+:root[data-theme="dark"] .pen-late { color: #f6a5a5; }
+:root[data-theme="dark"] .kpi-icon { color: #fff; }
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }

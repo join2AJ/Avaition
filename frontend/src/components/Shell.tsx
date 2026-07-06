@@ -29,7 +29,11 @@ export default function Shell({ children }: { children: ReactNode }) {
     cisf: [],
   };
   const allowed = AUDIENCE[session?.role ?? ""] ?? [];
-  const myNotifs = notifications.filter((n) => allowed.includes(n.to));
+  // Entity-side logins additionally only see notifications tied to their own
+  // entity (or broadcast ones with no entityId); oversight roles see all.
+  const scoped = ["entity", "others", "individual"].includes(session?.role ?? "");
+  const myNotifs = notifications.filter((n) =>
+    allowed.includes(n.to) && (!scoped || !n.entityId || n.entityId === session?.entityId));
   const unread = myNotifs.filter((n) => !n.read).length;
   const searchRef = useRef<HTMLInputElement>(null);
 

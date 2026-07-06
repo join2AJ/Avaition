@@ -74,6 +74,7 @@ export interface Notification {
   id: string;
   ts: string;
   to: string;               // audience: entity / bcas / individual / operator
+  entityId?: string;        // when set, only that entity's login sees it (else broadcast to the audience)
   type: string;
   message: string;
   tone: "ok" | "warn" | "bad";

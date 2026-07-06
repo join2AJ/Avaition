@@ -150,23 +150,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const t0 = +new Date(today());
     const bucketOf = (days: number): number | null =>
       days < 0 ? -1 : days <= 3 ? 3 : days <= 14 ? 14 : days <= 30 ? 30 : null;
-    const events: { id: string; to: string; message: string; tone: Notification["tone"] }[] = [];
-    const push = (date: string | undefined, idBase: string, label: string, to: string) => {
+    const events: { id: string; to: string; entityId?: string; message: string; tone: Notification["tone"] }[] = [];
+    const push = (date: string | undefined, idBase: string, label: string, to: string, entityId?: string) => {
       if (!date) return;
       const days = Math.round((+new Date(date) - t0) / 86400000);
       const b = bucketOf(days);
       if (b === null) return;
       const phrase = b === -1 ? "has EXPIRED — action overdue" : `expires in ${days} day${days === 1 ? "" : "s"} (≤ ${b}-day intimation)`;
-      events.push({ id: `EXP-${idBase}-${b}`, to, message: `${label} ${phrase}.`, tone: b === -1 || b === 3 ? "bad" : "warn" });
+      events.push({ id: `EXP-${idBase}-${b}`, to, entityId, message: `${label} ${phrase}.`, tone: b === -1 || b === 3 ? "bad" : "warn" });
     };
-    applications.forEach((a) => { if (a.status === "issued") push(a.expiryDate || a.validTo, `PASS-${a.id}`, `${a.subject}: ${a.passType} pass ${a.id}`, "entity"); });
-    contracts.forEach((c) => { if (c.status === "active") push(c.end, `CON-${c.id}`, `Contract ${c.id} · ${c.counterparty}`, "entity"); });
-    individuals.forEach((i) => push(i.avsecTrainingExpiry, `TRN-${i.id}`, `${i.name}: AVSEC training`, "entity"));
+    applications.forEach((a) => { if (a.status === "issued") push(a.expiryDate || a.validTo, `PASS-${a.id}`, `${a.subject}: ${a.passType} pass ${a.id}`, "entity", a.entityId); });
+    contracts.forEach((c) => { if (c.status === "active") push(c.end, `CON-${c.id}`, `Contract ${c.id} · ${c.counterparty}`, "entity", c.entityId); });
+    individuals.forEach((i) => push(i.avsecTrainingExpiry, `TRN-${i.id}`, `${i.name}: AVSEC training`, "entity", i.entityId));
 
     if (events.length) {
       setNotifications((prev) => {
         const have = new Set(prev.map((n) => n.id));
-        const add = events.filter((e) => !have.has(e.id)).map((e) => ({ id: e.id, ts: now(), to: e.to, type: "expiry", message: e.message, tone: e.tone, read: false }));
+        const add = events.filter((e) => !have.has(e.id)).map((e) => ({ id: e.id, ts: now(), to: e.to, entityId: e.entityId, type: "expiry", message: e.message, tone: e.tone, read: false }));
         return add.length ? [...add, ...prev] : prev;
       });
     }
@@ -180,8 +180,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setRoleZones_((m) => ({ ...m, [role]: zones }));
     log("edit_role_zones", role, `Role zone-need set to ${zones.join(" ") || "—"}`);
   };
-  const notify = (to: string, type: string, message: string, tone: Notification["tone"] = "warn") => {
-    setNotifications((n) => [{ id: `NTF-${Date.now()}-${Math.floor(Math.random() * 1000)}`, ts: now(), to, type, message, tone, read: false }, ...n]);
+  const notify = (to: string, type: string, message: string, tone: Notification["tone"] = "warn", entityId?: string) => {
+    setNotifications((n) => [{ id: `NTF-${Date.now()}-${Math.floor(Math.random() * 1000)}`, ts: now(), to, entityId, type, message, tone, read: false }, ...n]);
   };
   const markNotificationsRead: DataCtx["markNotificationsRead"] = () => setNotifications((n) => n.map((x) => ({ ...x, read: true })));
 
@@ -217,7 +217,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const ent = entities.find((e) => e.id === con.entityId);
     appendSurrenders(affected.map((a) => surrenderRecord(a.id, a.subject, con.entityId, "terminated")));
     log("terminate_contract", contractId, `${con.counterparty} · ${affected.length} passes terminated`, "bad");
-    notify("entity", "contract_terminated", `Contract ${contractId} (${con.counterparty}) terminated — ${affected.length} passes surrendered. Complete closing formalities within 7 days (§10.7).`, "bad");
+    notify("entity", "contract_terminated", `Contract ${contractId} (${con.counterparty}) terminated — ${affected.length} passes surrendered. Complete closing formalities within 7 days (§10.7).`, "bad", con.entityId);
     notify("bcas", "contract_terminated", `${ent?.name ?? con.entityId}: contract ${contractId} terminated — ${affected.length} passes moved to surrender.`, "bad");
     if (reapply.length) notify("individual", "reapply_required", `Zone reduction after contract ${contractId} ended: ${Array.from(new Set(reapply)).join(", ")} must re-apply for reduced access.`, "warn");
     if (unaffected.length) notify("individual", "coverage_ok", `Contract ${contractId} ended but zones remain covered by another contract for: ${Array.from(new Set(unaffected)).join(", ")}.`, "ok");
@@ -245,7 +245,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }));
     const ent = entities.find((e) => e.id === con.entityId);
     log("renew_contract", contractId, `${con.counterparty} renewed till ${newEnd} · ${extended} passes extended · zones re-confirmed ${confirmedZones.join(" ") || "—"}`);
-    notify("entity", "contract_renewed", `Contract ${contractId} (${con.counterparty}) renewed till ${newEnd}. ${extended} pass(es) extended co-terminus; entitled zones re-confirmed (§7A).`, "ok");
+    notify("entity", "contract_renewed", `Contract ${contractId} (${con.counterparty}) renewed till ${newEnd}. ${extended} pass(es) extended co-terminus; entitled zones re-confirmed (§7A).`, "ok", con.entityId);
     notify("bcas", "contract_renewed", `${ent?.name ?? con.entityId}: contract ${contractId} renewed till ${newEnd} — zones re-confirmed.`, "ok");
     if (shrunk.size) notify("individual", "reapply_required", `Zone(s) dropped at renewal of ${contractId}: ${Array.from(shrunk).join(", ")} must re-apply for the removed access.`, "warn");
   };
@@ -260,7 +260,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setSurrenders((x) => x.map((s) => (s.id === id ? { ...s, penalty: text, penaltyStatus: "open" } : s)));
     const s = surrenders.find((r) => r.id === id);
     log("raise_penalty", id, `BCAS penalty raised: ${text}`, "bad");
-    notify("entity", "penalty_raised", `Penalty raised on ${s?.applicationId ?? id} (${s?.holder ?? ""}): ${text} (§10.8).`, "bad");
+    notify("entity", "penalty_raised", `Penalty raised on ${s?.applicationId ?? id} (${s?.holder ?? ""}): ${text} (§10.8).`, "bad", s?.entityId);
   };
   const resolveSurrenderPenalty: DataCtx["resolveSurrenderPenalty"] = (id) => {
     setSurrenders((x) => x.map((s) => (s.id === id ? { ...s, penaltyStatus: "resolved" } : s)));
@@ -274,7 +274,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const cur = e.approvalStage ?? "registration";
       const next = order[Math.min(order.indexOf(cur) + 1, order.length - 1)];
       log("advance_approval", entityId, `${cur} → ${next}`);
-      if (next === "bcas_approved") notify("entity", "registration_approved", `${e.name}: registration approved by BCAS — you may now raise passes.`, "ok");
+      if (next === "bcas_approved") notify("entity", "registration_approved", `${e.name}: registration approved by BCAS — you may now raise passes.`, "ok", e.id);
       return { ...e, approvalStage: next };
     }));
   };
@@ -392,15 +392,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const tone: AuditEntry["tone"] = to === "rejected" || to === "withdrawn" ? "bad"
       : to === "clarification" || to === "surrendered" || to === "parked" || to === "deactivated" ? "warn" : "ok";
     log("advance_application", appId, `${app.subject}: ${app.status} → ${to}${opts?.note ? ` · ${opts.note}` : ""}`, tone);
-    if (to === "issued") notify("entity", "pass_issued", `${app.subject}: ${app.passType} pass ${app.status === "checklist_pending" || app.status === "approved" ? "approved & issued — ready for print / handover" : "reinstated"} (${appId}).`, "ok");
-    else if (to === "rejected") notify("entity", "pass_rejected", `${app.subject}: application ${appId} rejected${opts?.note ? ` — ${opts.note}` : ""}.`, "bad");
-    else if (to === "clarification") notify("entity", "clarification", `${app.subject}: clarification required on ${appId}${opts?.note ? ` — ${opts.note}` : ""}.`, "warn");
+    if (to === "issued") notify("entity", "pass_issued", `${app.subject}: ${app.passType} pass ${app.status === "checklist_pending" || app.status === "approved" ? "approved & issued — ready for print / handover" : "reinstated"} (${appId}).`, "ok", app.entityId);
+    else if (to === "rejected") notify("entity", "pass_rejected", `${app.subject}: application ${appId} rejected${opts?.note ? ` — ${opts.note}` : ""}.`, "bad", app.entityId);
+    else if (to === "clarification") notify("entity", "clarification", `${app.subject}: clarification required on ${appId}${opts?.note ? ` — ${opts.note}` : ""}.`, "warn", app.entityId);
     else if (to === "surrendered") { notify("bcas", "pass_surrendered", `${app.subject}: pass ${appId} surrendered${opts?.note ? ` — ${opts.note}` : ""} (§10.7).`, "warn"); appendSurrenders([surrenderRecord(appId, app.subject, app.entityId, "surrendered")]); }
     else if (to === "approved") notify("operator", "pass_approved", `${app.subject}: ${appId} approved at committee — proceed to issue (§15).`, "ok");
-    else if (to === "parked") notify("entity", "pass_parked", `${app.subject}: pass ${appId} parked for non-use${opts?.note ? ` — ${opts.note}` : ""}. Un-park within norms or it lapses (§10.6).`, "warn");
-    else if (to === "deactivated") notify("entity", "pass_deactivated", `${app.subject}: pass ${appId} deactivated (compliance hold)${opts?.note ? ` — ${opts.note}` : ""}. Clear the deficiency to reactivate (§10 · §13).`, "warn");
+    else if (to === "parked") notify("entity", "pass_parked", `${app.subject}: pass ${appId} parked for non-use${opts?.note ? ` — ${opts.note}` : ""}. Un-park within norms or it lapses (§10.6).`, "warn", app.entityId);
+    else if (to === "deactivated") notify("entity", "pass_deactivated", `${app.subject}: pass ${appId} deactivated (compliance hold)${opts?.note ? ` — ${opts.note}` : ""}. Clear the deficiency to reactivate (§10 · §13).`, "warn", app.entityId);
     else if (to === "withdrawn") {
-      notify("entity", "pass_withdrawn", `${app.subject}: pass ${appId} WITHDRAWN${opts?.note ? ` — ${opts.note}` : ""}. Surrender the card immediately (§11).`, "bad");
+      notify("entity", "pass_withdrawn", `${app.subject}: pass ${appId} WITHDRAWN${opts?.note ? ` — ${opts.note}` : ""}. Surrender the card immediately (§11).`, "bad", app.entityId);
       notify("bcas", "pass_withdrawn", `${app.subject}: ${appId} withdrawn (§11)${opts?.note ? ` — ${opts.note}` : ""}.`, "bad");
       appendSurrenders([surrenderRecord(appId, app.subject, app.entityId, "withdrawn")]);
       // §9/§11 — a withdrawn AEP holder is barred from re-applying: auto-add to
@@ -423,7 +423,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setApplications((x) => x.map((a) => (ids.has(a.id)
       ? { ...a, status: "deactivated", stepLog: [...(a.stepLog ?? []), { stage: "handover", at: ts, by: session?.name ?? "system", action: "Deactivate (compliance hold)", note: "AVSEC training lapsed — access held until refresher recorded (§13)" }] }
       : a)));
-    targets.forEach((t) => notify("entity", "training_hold", `${t.subject}: AEP ${t.id} deactivated — AVSEC training lapsed. Record the refresher to reactivate (§13).`, "bad"));
+    targets.forEach((t) => notify("entity", "training_hold", `${t.subject}: AEP ${t.id} deactivated — AVSEC training lapsed. Record the refresher to reactivate (§13).`, "bad", t.entityId));
     notify("bcas", "training_hold", `${targets.length} AEP(s) deactivated for lapsed AVSEC training (§13).`, "warn");
     log("training_hold_run", "AVSEC", `${targets.length} pass(es) deactivated for lapsed AVSEC training (§13)`, "warn");
     return targets.length;
@@ -440,7 +440,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ? { ...a, status: "issued", stepLog: [...(a.stepLog ?? []), { stage: "handover", at: ts, by: session?.name ?? "system", action: "Reactivate", note: `AVSEC refresher recorded — valid to ${newExpiry} (§13)` }] }
       : a)));
     log("avsec_refresher", individualId, `${ind.name}: AVSEC refresher recorded — valid to ${newExpiry}`, "ok");
-    notify("entity", "training_ok", `${ind.name}: AVSEC refresher recorded (valid to ${newExpiry}) — any held pass reactivated (§13).`, "ok");
+    notify("entity", "training_ok", `${ind.name}: AVSEC refresher recorded (valid to ${newExpiry}) — any held pass reactivated (§13).`, "ok", ind.entityId);
   };
 
   return (

@@ -81,6 +81,12 @@ found and fixed six further defects exposed once the lifecycle became drivable.
   the bell now filters by audience — entity/individual see only their own; aerodrome staff
   (admin/operator/bcas) oversee the pipeline; CISF (verify-only) sees none. Unread count respects it.
   Verified per role.
+- ☑ **E8 · S2 — Cross-entity notification leakage.** Even after E7, entity-addressed intimations carried
+  no entity identity, so one entity's login saw every entity's pass/contract/training notices. Fix:
+  `Notification` gains an optional `entityId`; all entity-scoped notify calls (expiry, pass lifecycle,
+  contract, training, penalty, registration) now stamp it, and an entity/individual login only sees its
+  own (broadcast messages with no entityId still reach everyone). Verified: ENT-01 no longer sees ENT-05's
+  intimations; BCAS still sees all.
 
 ## C. Application security
 

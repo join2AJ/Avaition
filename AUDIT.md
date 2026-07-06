@@ -7,8 +7,10 @@ compliance vs non-compliance, and give entities a governed way to obtain staff/m
 Severity: **S1** critical (compliance/security defect) · **S2** important gap · **S3** polish.
 
 Status: ☐ open · ☑ fixed. **All findings remediated except C3 (real server-side auth), which lands with
-the FastAPI wiring.** First pass A1–A6 · B1–B3 · C1–C2 · D1–D3 all closed; second-pass sweep (E1–E6)
-found and fixed six further defects exposed once the lifecycle became drivable.
+the FastAPI wiring.** First pass A1–A6 · B1–B3 · C1–C2 · D1–D3 all closed; second-pass sweep (E1–E8)
+found and fixed eight further defects exposed once the lifecycle became drivable. A flagship integration
+test drives one pass through the full chain — Checklist → Committee (BCAS) → Approved → Issued → Parked →
+Un-parked → Surrendered, with the surrender feeding the penalty tracker — green across role handoffs.
 
 ## A. Compliance correctness (AVSEC 02/2022)
 

@@ -4,7 +4,8 @@ import { useAuth } from "@/app/auth";
 import { useSettings } from "@/app/settings";
 import { useData } from "@/app/data";
 import { VERTICALS, type Crud } from "@/domain/permissions";
-import { NAV_CATALOG, NAV_BY_ROLE } from "@/app/nav";
+import { NAV_CATALOG, NAV_BY_ROLE, SUBTABS, subTabKey } from "@/app/nav";
+import { CornerDownRight } from "lucide-react";
 import { ROLE_LABEL } from "@/domain/roles";
 import { PILLARS, type Pillar, type Role } from "@/domain/types";
 
@@ -14,12 +15,19 @@ const MATRIX_ROLES: Role[] = ["admin", "bcas", "operator", "cisf", "entity", "ot
 
 export default function Users() {
   const { session } = useAuth();
-  const { roles, createRole, setPermission } = useData();
-  const [tab, setTab] = useState<"roles" | "access">("roles");
+  const { roles, createRole, setPermission, isTabHidden } = useData();
+  type UTab = "roles" | "access";
+  const [tab, setTab] = useState<UTab>("roles");
   const [newLabel, setNewLabel] = useState("");
   const canCreate = ["admin", "operator", "bcas"].includes(session!.role);
   const canEdit = session!.role === "admin" || session!.role === "bcas";
   const isAdmin = session!.role === "admin";
+  const U_TABS: { key: UTab; label: string; icon: typeof Users2 }[] = [
+    { key: "roles", label: "Roles & permissions", icon: Users2 },
+    ...(isAdmin ? [{ key: "access" as UTab, label: "Access control", icon: SlidersHorizontal }] : []),
+  ];
+  const visTabs = U_TABS.filter((t) => !isTabHidden(session!.role, subTabKey("/app/users", t.key)));
+  const activeTab = visTabs.some((t) => t.key === tab) ? tab : visTabs[0]?.key;
 
   const unassigned = roles.filter((r) => r.custom && !r.assigned);
 
@@ -33,11 +41,12 @@ export default function Users() {
       </div>
 
       <div className="create-tabs">
-        <button className={`ctab ${tab === "roles" ? "active" : ""}`} onClick={() => setTab("roles")}><Users2 size={15} /> Roles &amp; permissions</button>
-        {isAdmin && <button className={`ctab ${tab === "access" ? "active" : ""}`} onClick={() => setTab("access")}><SlidersHorizontal size={15} /> Access control</button>}
+        {visTabs.map((t) => (
+          <button key={t.key} className={`ctab ${activeTab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}><t.icon size={15} /> {t.label}</button>
+        ))}
       </div>
 
-      {tab === "roles" && (
+      {activeTab === "roles" && (
         <>
           {unassigned.length > 0 && (
             <div className="card card-pad flag-banner">
@@ -102,7 +111,7 @@ export default function Users() {
         </>
       )}
 
-      {tab === "access" && isAdmin && <AccessControl />}
+      {activeTab === "access" && isAdmin && <AccessControl />}
     </div>
   );
 }
@@ -127,28 +136,36 @@ function AccessControl() {
               <tr><th className="mx-vert">Tab</th>{MATRIX_ROLES.map((r) => <th key={r}>{ROLE_LABEL[r]}</th>)}</tr>
             </thead>
             <tbody>
-              {NAV_CATALOG.map((item) => (
-                <tr key={item.to}>
-                  <td className="mx-vert"><item.icon size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} />{item.label}</td>
-                  {MATRIX_ROLES.map((role) => {
-                    if (!inBase(role, item.to)) return <td key={role} className="access-na">—</td>;
-                    if (role === "admin") return (
-                      <td key={role}>
-                        <span className="vis-cell locked" title="Admin access is always on and cannot be revoked"><Lock size={12} /></span>
-                      </td>
-                    );
-                    const hidden = isHidden(role, item.to);
-                    return (
-                      <td key={role}>
-                        <button className={`vis-cell ${hidden ? "off" : "on"}`} onClick={() => setNavVisible(role, item.to, hidden)}
-                          title={`${hidden ? "Show" : "Hide"} ${item.label} for ${ROLE_LABEL[role]}`}>
-                          {hidden ? <EyeOff size={13} /> : <Eye size={13} />}
-                        </button>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+              {NAV_CATALOG.map((item) => {
+                const subs = SUBTABS[item.to] ?? [];
+                const cell = (role: Role, key: string, label: string) => {
+                  if (!inBase(role, item.to)) return <td key={role} className="access-na">—</td>;
+                  if (role === "admin") return <td key={role}><span className="vis-cell locked" title="Admin access is always on and cannot be revoked"><Lock size={12} /></span></td>;
+                  const hidden = isHidden(role, key);
+                  return (
+                    <td key={role}>
+                      <button className={`vis-cell ${hidden ? "off" : "on"}`} onClick={() => setNavVisible(role, key, hidden)}
+                        title={`${hidden ? "Show" : "Hide"} ${label} for ${ROLE_LABEL[role]}`}>
+                        {hidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                      </button>
+                    </td>
+                  );
+                };
+                return (
+                  <>
+                    <tr key={item.to}>
+                      <td className="mx-vert"><item.icon size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} />{item.label}</td>
+                      {MATRIX_ROLES.map((role) => cell(role, item.to, item.label))}
+                    </tr>
+                    {subs.map((s) => (
+                      <tr key={item.to + s.key} className="access-subrow">
+                        <td className="mx-vert sub"><CornerDownRight size={12} className="muted" style={{ verticalAlign: "-2px", marginRight: 6 }} />{s.label}</td>
+                        {MATRIX_ROLES.map((role) => cell(role, subTabKey(item.to, s.key), s.label))}
+                      </tr>
+                    ))}
+                  </>
+                );
+              })}
             </tbody>
           </table>
         </div>

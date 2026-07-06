@@ -57,6 +57,7 @@ interface DataCtx {
   setNavVisible: (role: string, to: string, visible: boolean) => void;
   visibleNav: (role: Role) => NavItem[];                          // effective nav after access-control overrides
   canSee: (role: Role, path: string) => boolean;                  // route authorization incl. overrides
+  isTabHidden: (role: Role, key: string) => boolean;              // sub-tab visibility (key = `${path}#${sub}`)
   createEntity: (e: NewEntity) => Entity;
   createIndividual: (i: NewIndividual) => Individual;
   createApplication: (a: NewApplication) => Application;
@@ -137,6 +138,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const hidden = new Set(navHidden[role] ?? []);
     const item = (NAV_BY_ROLE[role] ?? []).find((i) => (i.to === "/app" ? path === "/app" : path === i.to || path.startsWith(i.to + "/")));
     return item ? !hidden.has(item.to) : true;
+  };
+  const isTabHidden: DataCtx["isTabHidden"] = (role, key) => {
+    if (role === "admin") return false;                      // Admin sees every sub-tab
+    return (navHidden[role] ?? []).includes(key);
   };
   useEffect(() => { sessionStorage.setItem("aep-stoplist", JSON.stringify(stopList)); }, [stopList]);
   useEffect(() => { sessionStorage.setItem("aep-surrenders", JSON.stringify(surrenders)); }, [surrenders]);
@@ -493,7 +498,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, surrenders, roleZones, roles,
       zoneEscalations, resolveEscalation,
-      navHidden, setNavVisible, visibleNav, canSee,
+      navHidden, setNavVisible, visibleNav, canSee, isTabHidden,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, recordSurrenderJustification, raiseSurrenderPenalty, resolveSurrenderPenalty,
       applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,

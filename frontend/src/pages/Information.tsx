@@ -2,13 +2,26 @@ import { useState } from "react";
 import { ListChecks, Map } from "lucide-react";
 import { ZONES } from "@/domain/zones";
 import { ClauseBadge } from "@/components/ui";
+import { useAuth } from "@/app/auth";
+import { useData } from "@/app/data";
+import { subTabKey } from "@/app/nav";
 import Checklist from "./Checklist";
+
+type Tab = "checklist" | "zones";
 
 // Reference & guidance hub. Holds the document Checklists and the airport
 // Zone map + need-to-access policy. Entity zone entitlements and escalation
 // requests live in the Zone access database (with full history).
 export default function Information() {
-  const [tab, setTab] = useState<"checklist" | "zones">("checklist");
+  const { session } = useAuth();
+  const { isTabHidden } = useData();
+  const [tab, setTab] = useState<Tab>("checklist");
+  const TABS: { key: Tab; label: string; icon: typeof ListChecks }[] = [
+    { key: "checklist", label: "Checklists", icon: ListChecks },
+    { key: "zones", label: "Zones & escalation", icon: Map },
+  ];
+  const visTabs = TABS.filter((t) => !isTabHidden(session!.role, subTabKey("/app/information", t.key)));
+  const activeTab = visTabs.some((t) => t.key === tab) ? tab : visTabs[0]?.key;
 
   return (
     <div className="page">
@@ -20,13 +33,14 @@ export default function Information() {
       </div>
 
       <div className="create-tabs">
-        <button className={`ctab ${tab === "checklist" ? "active" : ""}`} onClick={() => setTab("checklist")}><ListChecks size={15} /> Checklists</button>
-        <button className={`ctab ${tab === "zones" ? "active" : ""}`} onClick={() => setTab("zones")}><Map size={15} /> Zones &amp; escalation</button>
+        {visTabs.map((t) => (
+          <button key={t.key} className={`ctab ${activeTab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}><t.icon size={15} /> {t.label}</button>
+        ))}
       </div>
 
-      {tab === "checklist" && <Checklist embedded />}
+      {activeTab === "checklist" && <Checklist embedded />}
 
-      {tab === "zones" && (
+      {activeTab === "zones" && (
         <>
           <section className="card card-pad">
             <div className="card-head"><span className="section-title">Airport zone map</span><span className="muted" style={{ fontSize: 12 }}>SRA = Security Restricted Area</span></div>

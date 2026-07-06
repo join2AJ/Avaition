@@ -3,6 +3,7 @@ import { Building2, Users2, Check, Search, History as HistoryIcon, MapPin } from
 import { useAuth } from "@/app/auth";
 import { useData } from "@/app/data";
 import { entityName } from "@/lib/api";
+import { subTabKey } from "@/app/nav";
 import { ZONES } from "@/domain/zones";
 import { Pill } from "@/components/ui";
 
@@ -13,9 +14,17 @@ const ESC_TONE: Record<string, string> = { blocked: "red", approved: "green", re
 // escalation requests. Edits are audit-logged and feed the auto-give on passes.
 export default function ZoneAccess() {
   const { session } = useAuth();
-  const { entities, roleZones, audit, zoneEscalations, resolveEscalation, setEntityZones, setRoleZones } = useData();
+  const { entities, roleZones, audit, zoneEscalations, resolveEscalation, setEntityZones, setRoleZones, isTabHidden } = useData();
   const canResolve = ["admin", "bcas"].includes(session!.role);
-  const [tab, setTab] = useState<"entity" | "role" | "history">("entity");
+  type ZTab = "entity" | "role" | "history";
+  const [tab, setTab] = useState<ZTab>("entity");
+  const Z_TABS: { key: ZTab; label: string; icon: typeof Building2 }[] = [
+    { key: "entity", label: "Entity-wise zones", icon: Building2 },
+    { key: "role", label: "Role-wise zones", icon: Users2 },
+    { key: "history", label: "History & escalations", icon: HistoryIcon },
+  ];
+  const visTabs = Z_TABS.filter((t) => !isTabHidden(session!.role, subTabKey("/app/zone-access", t.key)));
+  const activeTab = visTabs.some((t) => t.key === tab) ? tab : visTabs[0]?.key;
   const [q, setQ] = useState("");
   const zoneHistory = audit.filter((a) => ["edit_entity_zones", "edit_role_zones", "renew_contract"].includes(a.action));
   const nq = q.trim().toLowerCase();
@@ -45,29 +54,29 @@ export default function ZoneAccess() {
 
       <div className="za-controls">
         <div className="create-tabs">
-          <button className={`ctab ${tab === "entity" ? "active" : ""}`} onClick={() => setTab("entity")}><Building2 size={15} /> Entity-wise zones</button>
-          <button className={`ctab ${tab === "role" ? "active" : ""}`} onClick={() => setTab("role")}><Users2 size={15} /> Role-wise zones</button>
-          <button className={`ctab ${tab === "history" ? "active" : ""}`} onClick={() => setTab("history")}><HistoryIcon size={15} /> History &amp; escalations</button>
+          {visTabs.map((t) => (
+            <button key={t.key} className={`ctab ${activeTab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}><t.icon size={15} /> {t.label}</button>
+          ))}
         </div>
-        {tab !== "history" && (
+        {activeTab !== "history" && (
           <div className="za-search">
             <Search size={15} className="muted" />
-            <input placeholder={`Search ${tab === "entity" ? "entities" : "roles"}…`} value={q} onChange={(e) => setQ(e.target.value)} />
+            <input placeholder={`Search ${activeTab === "entity" ? "entities" : "roles"}…`} value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
         )}
       </div>
 
-      {tab !== "history" ? (
+      {activeTab !== "history" ? (
         <>
           <section className="card za-card">
             <div className="za-scroll">
               <table className="za-table">
                 <thead>
-                  <tr><th className="za-name">{tab === "entity" ? "Entity" : "Job role"}</th>
+                  <tr><th className="za-name">{activeTab === "entity" ? "Entity" : "Job role"}</th>
                     {ZONES.map((z) => <th key={z.code} className={`mono ${z.sra ? "sra" : ""}`} title={z.label}>{z.code}</th>)}</tr>
                 </thead>
                 <tbody>
-                  {tab === "entity"
+                  {activeTab === "entity"
                     ? entRows.map((e) => (
                         <tr key={e.id}>
                           <td className="za-name">{e.name}</td>

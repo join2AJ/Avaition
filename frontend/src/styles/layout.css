@@ -442,6 +442,8 @@
 
 /* Access-control visibility matrix. */
 .access-matrix .mx-vert { min-width: 190px; }
+.access-subrow td { background: var(--surface-sunken); }
+.access-subrow .mx-vert.sub { padding-left: 26px; font-weight: 500; font-size: 12.5px; color: var(--text-secondary); }
 .access-na { color: var(--text-muted); opacity: 0.4; }
 .vis-cell { display: inline-grid; place-items: center; width: 30px; height: 26px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface-card); cursor: pointer; transition: var(--transition); }
 .vis-cell.on { color: var(--green-700); border-color: var(--green-300); background: color-mix(in srgb, var(--green-700) 10%, transparent); }

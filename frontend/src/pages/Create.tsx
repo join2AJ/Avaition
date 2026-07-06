@@ -7,6 +7,7 @@ import { PILLARS, type Pillar, type PassType } from "@/domain/types";
 import { ZONES } from "@/domain/zones";
 import { JOB_ROLES, computeValidTo, today } from "@/domain/entitlements";
 import { ClauseBadge } from "@/components/ui";
+import { subTabKey } from "@/app/nav";
 import EntityOnboarding from "./EntityOnboarding";
 
 type Tab = "pass" | "onboard";
@@ -25,11 +26,19 @@ const MAN_SUBTYPES = ["BAEP (>31 days)", "TAEP (≤30 days)", "One-Day", "Protoc
 const MATERIAL_SUBTYPES = ["One-Day", "One-month", "Quarterly (3 mo)"];
 
 export default function Create() {
-  const { entities, individuals, roleZones, contracts, applications, createApplication, isStopListed, screenStopList, taepDaysUsed } = useData();
+  const { entities, individuals, roleZones, contracts, applications, createApplication, isStopListed, screenStopList, taepDaysUsed, isTabHidden } = useData();
   const { session } = useAuth();
   const nav = useNavigate();
   const isAdmin = session?.role === "admin";
   const [tab, setTab] = useState<Tab>("pass");
+  // Access-control: sub-tabs an Admin has hidden for this login are dropped, and
+  // the active tab falls back to the first still-visible one.
+  const CREATE_TABS: { key: Tab; label: string; icon: typeof Plane }[] = [
+    { key: "pass", label: "Raise a pass", icon: Plane },
+    { key: "onboard", label: "Onboard entity", icon: Building2 },
+  ];
+  const visTabs = CREATE_TABS.filter((t) => !isTabHidden(session!.role, subTabKey("/app/create", t.key)));
+  const activeTab: Tab | undefined = visTabs.some((t) => t.key === tab) ? tab : visTabs[0]?.key;
   const [done, setDone] = useState<string | null>(null);
 
   // pass form
@@ -130,11 +139,13 @@ export default function Create() {
       </div>
 
       <div className="create-tabs">
-        <button className={`ctab ${tab === "pass" ? "active" : ""}`} onClick={() => setTab("pass")}><Plane size={15} /> Raise a pass</button>
-        <button className={`ctab ${tab === "onboard" ? "active" : ""}`} onClick={() => setTab("onboard")}><Building2 size={15} /> Onboard entity</button>
+        {visTabs.map((t) => (
+          <button key={t.key} className={`ctab ${activeTab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}><t.icon size={15} /> {t.label}</button>
+        ))}
       </div>
+      {visTabs.length === 0 && <div className="card card-pad muted">No creation sections are enabled for your login.</div>}
 
-      {tab === "pass" && (
+      {activeTab === "pass" && (
         <section className="card card-pad create-form">
           <div className="fld">
             <span className="fld-l">Pillar</span>
@@ -281,7 +292,7 @@ export default function Create() {
         </section>
       )}
 
-      {tab === "onboard" && <EntityOnboarding embedded />}
+      {activeTab === "onboard" && <EntityOnboarding embedded />}
     </div>
   );
 }

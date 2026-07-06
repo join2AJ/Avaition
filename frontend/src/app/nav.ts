@@ -35,6 +35,32 @@ const ALL: Record<string, NavItem> = {
 /** Every distinct navigable destination (for the Admin access-control matrix). */
 export const NAV_CATALOG: NavItem[] = Object.values(ALL);
 
+/** Sub-tabs inside a page, keyed by the parent nav path. The Admin access-control
+ *  matrix can hide any of these per login for finer control. A hidden sub-tab is
+ *  stored as `${parentPath}#${subKey}` in the same navHidden map. */
+export const SUBTABS: Record<string, { key: string; label: string }[]> = {
+  "/app/create": [
+    { key: "pass", label: "Raise a Pass" },
+    { key: "onboard", label: "Onboard entity" },
+  ],
+  "/app/information": [
+    { key: "checklist", label: "Checklists" },
+    { key: "zones", label: "Zones & escalation" },
+  ],
+  "/app/zone-access": [
+    { key: "entity", label: "Entity-wise zones" },
+    { key: "role", label: "Role-wise zones" },
+    { key: "history", label: "History & escalations" },
+  ],
+  "/app/users": [
+    { key: "roles", label: "Roles & permissions" },
+    { key: "access", label: "Access control" },
+  ],
+};
+
+/** Composite key stored in navHidden for a hidden sub-tab. */
+export const subTabKey = (parentPath: string, subKey: string) => `${parentPath}#${subKey}`;
+
 /** Home path for a role (first nav item). */
 export function homeFor(role: Role): string {
   return NAV_BY_ROLE[role]?.[0]?.to ?? "/app";

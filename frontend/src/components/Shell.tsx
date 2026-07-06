@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Bell, LogOut, Moon, Plane, Search, Sun, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Bell, LogOut, Moon, Plane, Search, Sun, PanelLeftClose, PanelLeft, Menu, X } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useTheme } from "@/app/theme";
 import { useData } from "@/app/data";
@@ -13,6 +13,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   const { markNotificationsRead, visibleNav, notificationsFor } = useData();
   const nav = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [q, setQ] = useState("");
   const myNotifs = session ? notificationsFor(session.role, session.entityId) : [];
@@ -37,7 +38,8 @@ export default function Shell({ children }: { children: ReactNode }) {
   const items = visibleNav(session.role);
 
   return (
-    <div className={`shell ${collapsed ? "collapsed" : ""}`}>
+    <div className={`shell ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
+      {mobileOpen && <div className="mobile-scrim" onClick={() => setMobileOpen(false)} />}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <span className="brand-mark"><Plane size={18} /></span>
@@ -45,6 +47,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <b>AEP Portal</b>
             <small>COMPLIANTBHARAT · AVIATION</small>
           </span>
+          <button className="icon-btn drawer-close" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X size={18} /></button>
         </div>
 
         <div className="sidebar-role">
@@ -54,7 +57,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
         <nav className="sidebar-nav">
           {items.map((it) => (
-            <NavLink key={it.to} to={it.to} end={it.to === "/app"} className="nav-item">
+            <NavLink key={it.to} to={it.to} end={it.to === "/app"} className="nav-item" onClick={() => setMobileOpen(false)}>
               <it.icon size={17} />
               <span>{it.label}</span>
               {it.badge ? <span className="nav-badge">{it.badge}</span> : null}
@@ -73,7 +76,10 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <div className="main">
         <header className="topbar">
-          <button className="icon-btn" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
+          <button className="icon-btn menu-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+            <Menu size={19} />
+          </button>
+          <button className="icon-btn collapse-btn" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
             {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
           </button>
           <div className="topbar-search">

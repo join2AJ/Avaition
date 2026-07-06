@@ -96,13 +96,14 @@
 .dash-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 
-.statebars { display: flex; align-items: flex-end; gap: 14px; height: 190px; padding-top: 10px; }
-.statebar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; background: none; border: none; padding: 0; }
+.statebars { display: flex; align-items: flex-end; gap: 10px; height: 200px; padding-top: 10px; }
+.statebar { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; background: none; border: none; padding: 0; }
 .statebar-count { font-size: 13px; font-weight: 700; }
 .statebar-fill { width: 100%; max-width: 54px; border-radius: 8px 8px 3px 3px; min-height: 4px; transition: 0.2s; opacity: 0.9; }
 .statebar:hover .statebar-fill { opacity: 1; }
 .statebar.active .statebar-fill { box-shadow: 0 0 0 3px var(--brand-soft); }
-.statebar-label { font-size: 10.5px; color: var(--mute); text-transform: capitalize; text-align: center; }
+.statebar-label { font-size: 10.5px; color: var(--mute); text-transform: capitalize; text-align: center; line-height: 1.15; overflow-wrap: anywhere; hyphens: auto; }
+@media (max-width: 720px) { .statebar-label { font-size: 9px; } }
 
 .pmix { display: flex; flex-direction: column; gap: 14px; }
 .pmix-row { display: grid; grid-template-columns: 120px 1fr 28px; align-items: center; gap: 12px;
@@ -383,7 +384,7 @@
 .esc-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11.5px; }
 
 /* ===== Onboarding wizard ================================================= */
-.wizard-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.wizard-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
 .wiz-step { display: flex; align-items: center; gap: 11px; padding: 13px 15px; border-radius: var(--radius-lg); border: 1px solid var(--border-hairline); background: var(--surface-card); text-align: left; transition: var(--transition); }
 .wiz-step.active { border-color: var(--navy-400); box-shadow: var(--shadow-focus); }
 .wiz-node { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-sunken); color: var(--text-muted); flex: none; }
@@ -614,26 +615,74 @@ button.vis-cell:hover { border-color: var(--navy-500); }
 .login-foot { color: #62748d; font-size: 11px; margin-top: 22px; }
 
 /* ===== Responsive ======================================================= */
+/* Mobile-only chrome — hidden on desktop, shown inside the drawer breakpoint. */
+.menu-btn, .drawer-close, .mobile-scrim { display: none; }
+
 @media (max-width: 1200px) {
   .kpi-grid { grid-template-columns: repeat(4, 1fr); }
   .dash-grid { grid-template-columns: 1fr; }
   .role-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ---- Tablet / phone: off-canvas navigation drawer --------------------- */
 @media (max-width: 900px) {
-  .shell { grid-template-columns: 1fr; }
-  .sidebar { position: fixed; z-index: 40; width: var(--sidebar-w); transform: translateX(-100%); transition: 0.2s; }
+  .shell, .shell.collapsed { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 60; width: min(84vw, 288px);
+    transform: translateX(-100%); transition: transform 0.28s var(--ease-cruise, ease);
+    box-shadow: none;
+  }
+  .shell.mobile-open .sidebar { transform: translateX(0); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
+  .mobile-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(3, 10, 22, 0.6); backdrop-filter: blur(1px); animation: cb-fade 0.2s ease; }
+  /* In the drawer the nav is always full (never the desktop mini-collapsed form). */
+  .shell.collapsed .brand-text, .shell.collapsed .sidebar-role,
+  .shell.collapsed .nav-item span, .shell.collapsed .nav-badge,
+  .shell.collapsed .sidebar-foot .eyebrow, .shell.collapsed .govern,
+  .shell.collapsed .sidebar-foot .btn span { display: revert; }
+  .shell.collapsed .nav-item, .shell.collapsed .sidebar-foot .btn { justify-content: flex-start; }
+  .menu-btn { display: inline-flex; }
+  .collapse-btn { display: none; }
+  .drawer-close { display: inline-flex; margin-left: auto; color: #cdd8e6; background: #ffffff12; }
   .pillar-legend { display: none; }
-  .reg-row { grid-template-columns: 78px 60px minmax(0, 1fr) 120px 18px; }
-  .reg-entity, .reg-pass, .reg-zones { display: none; }
+  .content { padding: clamp(14px, 4vw, 20px); }
+  /* Register: keep exactly 4 cells (id · subject · status · chevron) so the grid
+     never spills into implicit columns. Pillar badge, entity, pass, zones hide. */
+  .reg-row { grid-template-columns: 78px minmax(0, 1fr) 112px 18px; gap: 10px; }
+  .reg-row > *:nth-child(2), .reg-pass, .reg-zones, .reg-entity { display: none; }
   .reg-subject { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cmte-ready-row { grid-template-columns: 78px minmax(0,1fr) 90px 18px !important; }
+  .cmte-ready-row > *:nth-child(4) { display: none; }
+  .create-tabs, .app-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .create-tabs .ctab, .app-tab { white-space: nowrap; flex: none; }
 }
-@media (max-width: 640px) {
-  .user-meta { display: none; }
-  .topbar-search kbd { display: none; }
-}
+
 @media (max-width: 720px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .role-grid { grid-template-columns: 1fr; }
   .li-form { flex-direction: column; }
   .page-head { flex-direction: column; }
+  .page-head h2 { font-size: 21px; }
+  .wizard-steps { grid-template-columns: 1fr 1fr; }
+  .sig-row2 { grid-template-columns: 1fr 1fr; }
+  .sig-row2 .icon-btn { grid-column: span 2; justify-self: end; }
+  .doc-row { grid-template-columns: 1fr 1fr; }
+  .doc-row .doc-name { grid-column: span 2; }
+  .zone-map { grid-template-columns: repeat(3, 1fr); }
+  .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; }
+}
+
+@media (max-width: 640px) {
+  .user-meta { display: none; }
+  .topbar-search kbd { display: none; }
+  .notif-panel { position: fixed; top: 60px; left: 8px; right: 8px; width: auto; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .zone-map { grid-template-columns: repeat(2, 1fr); }
+  .wizard-steps { grid-template-columns: 1fr; }
+  .doc-row, .sig-row2 { grid-template-columns: 1fr; }
+  .sig-row2 .icon-btn, .doc-row .doc-name { grid-column: auto; }
+  .filter-row { flex-direction: column; align-items: stretch; }
+  .filter-row .field.mini { width: 100%; }
 }

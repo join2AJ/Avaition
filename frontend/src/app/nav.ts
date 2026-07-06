@@ -54,6 +54,7 @@ export const SUBTABS: Record<string, { key: string; label: string }[]> = {
   ],
   "/app/users": [
     { key: "roles", label: "Roles & permissions" },
+    { key: "requirements", label: "Requirements basis" },
     { key: "access", label: "Access control" },
   ],
 };

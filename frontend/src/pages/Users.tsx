@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, ShieldAlert, Check, Users2, SlidersHorizontal, Eye, EyeOff, Lock } from "lucide-react";
+import { Plus, ShieldAlert, Check, Users2, SlidersHorizontal, Eye, EyeOff, Lock, Scale, Landmark, Building2 } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useSettings } from "@/app/settings";
 import { useData } from "@/app/data";
@@ -8,6 +8,7 @@ import { NAV_CATALOG, NAV_BY_ROLE, SUBTABS, subTabKey } from "@/app/nav";
 import { CornerDownRight } from "lucide-react";
 import { ROLE_LABEL } from "@/domain/roles";
 import { PILLARS, type Pillar, type Role } from "@/domain/types";
+import { Pill } from "@/components/ui";
 
 const OPS: (keyof Crud)[] = ["c", "r", "u", "d"];
 const OP_LABEL: Record<keyof Crud, string> = { c: "C", r: "R", u: "U", d: "D" };
@@ -16,7 +17,7 @@ const MATRIX_ROLES: Role[] = ["admin", "bcas", "operator", "cisf", "entity", "ot
 export default function Users() {
   const { session } = useAuth();
   const { roles, createRole, setPermission, isTabHidden } = useData();
-  type UTab = "roles" | "access";
+  type UTab = "roles" | "requirements" | "access";
   const [tab, setTab] = useState<UTab>("roles");
   const [newLabel, setNewLabel] = useState("");
   const canCreate = ["admin", "operator", "bcas"].includes(session!.role);
@@ -24,6 +25,7 @@ export default function Users() {
   const isAdmin = session!.role === "admin";
   const U_TABS: { key: UTab; label: string; icon: typeof Users2 }[] = [
     { key: "roles", label: "Roles & permissions", icon: Users2 },
+    { key: "requirements", label: "Requirements basis", icon: Scale },
     ...(isAdmin ? [{ key: "access" as UTab, label: "Access control", icon: SlidersHorizontal }] : []),
   ];
   const visTabs = U_TABS.filter((t) => !isTabHidden(session!.role, subTabKey("/app/users", t.key)));
@@ -111,8 +113,77 @@ export default function Users() {
         </>
       )}
 
+      {activeTab === "requirements" && <Requirements />}
+
       {activeTab === "access" && isAdmin && <AccessControl />}
     </div>
+  );
+}
+
+// Governance basis — which flows are BCAS regulatory-mandatory and which the
+// Aerodrome Operator devised for smooth operations (AVSEC 02/2022 is largely
+// silent on Material/ToT, so the operator defined that lifecycle).
+type Basis = "bcas" | "operator";
+const REQUIREMENTS: { flow: string; basis: Basis; clause: string; note: string }[] = [
+  { flow: "Entity registration & signatories", basis: "bcas", clause: "§3 · §13A", note: "Category, Security Programme, Security Clearance, min-2/max-5 Authorized Signatories — regulator-defined." },
+  { flow: "MAN — AEP / TAEP / Protocol / BAEP", basis: "bcas", clause: "§5–§11", note: "BGC, AVSEC training, committee scrutiny, co-terminus validity, Stop List — all mandated by BCAS." },
+  { flow: "VEHICLE — VAP + ADP", basis: "bcas", clause: "§12A · §14", note: "Vehicle documents, Airside Driving Permit first, max 1-year non-transferable pass — regulator-defined." },
+  { flow: "MATERIAL — Tools of Trade (ToT)", basis: "operator", clause: "§10.2 · Annexure C", note: "AVSEC 02/2022 only lists tool categories; it does not define a ToT lifecycle. The Aerodrome Operator devised issuance, escort binding and One-Day / One-month / Quarterly validity." },
+  { flow: "Stop List screening", basis: "bcas", clause: "§9", note: "Bar list screened before every issuance — a regulatory control." },
+  { flow: "Background Check (BGC) & withdrawal", basis: "bcas", clause: "§8.3.3.6 · §11", note: "Police verification and adverse-BGC withdrawal are regulator-owned." },
+  { flow: "AVSEC training validity", basis: "bcas", clause: "§13", note: "Annual refresher; lapse suspends access — regulator-defined." },
+  { flow: "Surrender window & penalty", basis: "bcas", clause: "§10.7 · §10.8", note: "7-day surrender on exit and BCAS penalty framework are mandated; the operator runs the day-to-day closing." },
+  { flow: "Parked (non-use) / Un-park", basis: "operator", clause: "§10.6", note: "60-day non-use suspension is guideline-noted, but the operator operationalises the park / un-park handling." },
+  { flow: "Committee cadence & processing chain", basis: "bcas", clause: "§8.3.3", note: "Fortnightly AEP committee and its scrutiny chain are regulator-defined." },
+  { flow: "Zone need-to-access principle", basis: "bcas", clause: "need-to-access", note: "The principle is regulatory; the operator maintains the entity/role zone database and escalation handling." },
+  { flow: "Processing SLAs (turnaround)", basis: "operator", clause: "§8.3.3.11 + assumed", note: "MAN SLAs are guideline figures; Material/Vehicle turnarounds are operator-assumed standards for smooth operations." },
+  { flow: "Surprise checks & 20% annual audit", basis: "bcas", clause: "§15", note: "AEP Checking Committee cadence is regulator-mandated; the operator executes and records it." },
+];
+const BASIS_META: Record<Basis, { label: string; tone: string; icon: typeof Landmark }> = {
+  bcas: { label: "BCAS — regulatory mandatory", tone: "red", icon: Landmark },
+  operator: { label: "Aerodrome Operator — devised", tone: "teal", icon: Building2 },
+};
+
+function Requirements() {
+  const counts = { bcas: REQUIREMENTS.filter((r) => r.basis === "bcas").length, operator: REQUIREMENTS.filter((r) => r.basis === "operator").length };
+  return (
+    <>
+      <div className="req-legend">
+        {(["bcas", "operator"] as Basis[]).map((b) => {
+          const m = BASIS_META[b];
+          return (
+            <div className={`req-legend-item tone-${m.tone}`} key={b}>
+              <m.icon size={15} /><b>{m.label}</b><span className="req-legend-n">{counts[b]}</span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, margin: "0 0 14px" }}>
+        What the regulator (BCAS, AVSEC Order 02/2022) mandates versus what the Aerodrome Operator devised for smooth
+        operations. Man and Vehicle passes and entity registration are largely regulator-defined; the guidelines say
+        little about <b>Material (ToT)</b>, so the operator built that lifecycle.
+      </p>
+      <section className="card matrix-card">
+        <div className="matrix-scroll">
+          <table className="sur-table">
+            <thead><tr><th>Flow</th><th>Governance basis</th><th>Reference</th><th>Notes</th></tr></thead>
+            <tbody>
+              {REQUIREMENTS.map((r) => {
+                const m = BASIS_META[r.basis];
+                return (
+                  <tr key={r.flow}>
+                    <td><b>{r.flow}</b></td>
+                    <td><Pill tone={m.tone} dot>{r.basis === "bcas" ? "BCAS mandatory" : "Operator devised"}</Pill></td>
+                    <td><span className="badge-clause">{r.clause}</span></td>
+                    <td className="sur-just">{r.note}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
   );
 }
 

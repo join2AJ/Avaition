@@ -14,3 +14,23 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Hardened security response headers for every asset.
+#  - CSP: scripts self-only (build has no inline JS); styles allow inline (React
+#    style attrs) + Google Fonts CSS; fonts from gstatic; no framing; no objects.
+#  - Clickjacking, MIME-sniffing, refer/permissions locked down; HSTS on HTTPS.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+# Long-cache the fingerprinted build assets (safe — filenames are content-hashed).
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

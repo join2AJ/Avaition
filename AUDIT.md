@@ -49,6 +49,37 @@ Un-parked → Surrendered, with the surrender feeding the penalty tracker — gr
   20%-of-population audit sample as a progress meter (audited YTD vs target) plus a monthly
   surprise-check chart with finding counts, per the AEP Checking Committee mandate.
 
+## S. Security review (frontend + backend)
+
+Reviewed as a security engineer for the classic web/API flaw classes. Frontend is
+clean of injection sinks (React auto-escapes; **no** `dangerouslySetInnerHTML`,
+`innerHTML`, `eval`, or unsafe `target="_blank"`). Secrets are not committed
+(`.env`, `*.db`, `uploads/` are git-ignored). Findings fixed:
+
+- ☑ **SEC-1 · S1 — Forgeable JWT secret.** `secret_key` shipped a hard-coded default
+  (`change-this-…`); a deploy that forgot `.env` would sign tokens with a public key →
+  full auth bypass / privilege escalation. Fix: `ENVIRONMENT=production` now fail-fasts
+  at startup if the secret is default or < 32 chars. Verified (prod boot raises).
+- ☑ **SEC-2 · S2 — Default admin credentials.** `admin@aepportal.in / Admin@123456` was a
+  built-in default. Production startup now refuses the default admin password.
+- ☑ **SEC-3 · S1 — CORS wildcard + credentials.** `allow_origins=["*"]` with
+  `allow_credentials=True` is invalid and origin-uncontrolled. Fix: explicit
+  `CORS_ORIGINS` allowlist, scoped methods/headers; wildcard rejected in prod.
+- ☑ **SEC-4 · S2 — No login brute-force protection.** Added an IP+email sliding-window
+  throttle (8 fails / 5 min → HTTP 429). Verified over HTTP.
+- ☑ **SEC-5 · S2 — User-enumeration timing oracle.** Login only hashed when the email
+  existed. Fix: always verify against a dummy bcrypt hash so timing is constant; error
+  message stays uniform ("Incorrect email or password").
+- ☑ **SEC-6 · S2 — Missing security headers.** Added CSP (script self-only; styles+fonts
+  scoped to Google Fonts), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`,
+  `Permissions-Policy`, and HSTS on Netlify, plus a matching header middleware on the API.
+- ☐ **SEC-7 · S2 — `python-jose` 3.3.0 has known CVEs** (algorithm-confusion / JWT-bomb).
+  Decoding already pins `algorithms=[HS256]`, which blocks the alg-confusion path; a full
+  fix is migrating to `PyJWT`. *(recommended, deferred)*
+- ☐ **C3 · S2 — Client-side auth (frontend).** Roles live in `sessionStorage`, so the demo
+  is spoofable; real enforcement is the server RBAC above once the SPA is wired to it.
+  *(backend-wiring phase)*
+
 ## F. Tab-wise UX & governance improvements (third pass)
 
 - ☑ **F1 — Dark theme eye-comfort.** Reworked to desaturated slate surfaces (no near-black), gentle

@@ -9,6 +9,7 @@ import type { Role } from "@/domain/types";
 // login (both admin kinds, BCAS, Pass Section, Entity, Others, CISF gate and
 // Individual self-check), so there is exactly one entry point to the database.
 const LOGIN_OPTIONS: { id: string; role: Role; label: string }[] = [
+  { id: "database", role: "admin", label: "Database — Super Admin" },
   { id: "admin-operator", role: "admin", label: "Admin — Airport Operator" },
   { id: "admin-bcas", role: "admin", label: "Admin — BCAS" },
   { id: "bcas", role: "bcas", label: "BCAS Officer" },
@@ -32,7 +33,10 @@ export default function Login() {
     // chosen login (the two admin kinds stay distinguishable in the audit).
     const display = username.trim() || opt.label;
     const name =
-      opt.id === "admin-bcas" ? "BCAS Admin" : opt.id === "admin-operator" ? "Operator Admin" : display;
+      opt.id === "database" ? "Super Admin"
+      : opt.id === "admin-bcas" ? "BCAS Admin"
+      : opt.id === "admin-operator" ? "Operator Admin"
+      : display;
     signIn({
       role: opt.role,
       name,

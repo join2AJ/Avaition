@@ -160,10 +160,8 @@
 .action-chip.tone-red { background: var(--red-100); color: var(--red-700); }
 .action-chip.tone-amber { background: var(--amber-100); color: var(--amber-700); }
 .action-chip:hover { filter: brightness(0.97); transform: translateY(-1px); }
-.login-combo { max-width: 900px; margin: 0 auto 6px; }
-.combo-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr auto; gap: 12px; align-items: end; }
-.combo-btn { height: 42px; }
-@media (max-width: 720px) { .combo-row { grid-template-columns: 1fr; } }
+.login-combo { max-width: 460px; margin: 0 auto 6px; display: flex; flex-direction: column; gap: 14px; }
+.combo-btn { height: 44px; width: 100%; justify-content: center; margin-top: 2px; }
 .reg-id-cell { display: flex; flex-direction: column; gap: 2px; }
 .reg-time { font-size: 10px; color: var(--text-muted); }
 .audit-live { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; background: var(--green-500); color: #04120b; padding: 1px 6px; border-radius: 999px; margin-left: auto; }

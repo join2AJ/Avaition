@@ -9,8 +9,8 @@ import { Database, KeyRound, Link2, Search, Table2 } from "lucide-react";
 // Target engine: PostgreSQL (normalized, 3NF, with RBAC + audit).
 // ---------------------------------------------------------------------------
 
-type Key = "PK" | "FK" | "PK+FK";
-interface Col {
+export type Key = "PK" | "FK" | "PK+FK";
+export interface Col {
   name: string;
   type: string;
   key?: Key;
@@ -18,14 +18,14 @@ interface Col {
   nullable?: boolean;
   note?: string;
 }
-interface Tbl {
+export interface Tbl {
   name: string;
   domain: string;
   purpose: string;
   cols: Col[];
 }
 
-const SCHEMA: Tbl[] = [
+export const SCHEMA: Tbl[] = [
   // ---- 1. Identity & Access Control -------------------------------------
   {
     name: "roles", domain: "Identity & Access", purpose: "Built-in + custom login roles (AVSEC 02/2022 §2).",

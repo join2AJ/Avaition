@@ -19,6 +19,7 @@ import Information from "./pages/Information";
 import Notifications from "./pages/Notifications";
 import Penalties from "./pages/Penalties";
 import Users from "./pages/Users";
+import DatabasePage from "./pages/Database";
 import Audit from "./pages/Audit";
 import Placeholder from "./pages/Placeholder";
 import "./styles/layout.css";
@@ -70,6 +71,7 @@ export default function App() {
                 <Route path="penalties" element={<Penalties />} />
                 <Route path="profile" element={<Placeholder title="Entity profile" note="Live compliance status: Security Programme, Clearance, contract validity, NCASP, AOP linkage, dynamic category docs." />} />
                 <Route path="users" element={<Users />} />
+                <Route path="database" element={<DatabasePage />} />
                 <Route path="audit" element={<Audit />} />
                 {/* Legacy paths → new homes */}
                 <Route path="checklist" element={<Navigate to="/app/information" replace />} />

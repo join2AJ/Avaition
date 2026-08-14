@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Database, KeyRound, Link2, Search, Table2 } from "lucide-react";
+import { Database, KeyRound, Link2, Search, Table2, Share2, ArrowRight } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Complete database schema for the AEP Portal — every table, column, datatype,
@@ -557,6 +557,79 @@ export const SCHEMA: Tbl[] = [
 
 const DOMAINS = Array.from(new Set(SCHEMA.map((t) => t.domain)));
 
+const DOMAIN_ACCENT: Record<string, string> = {
+  "Identity & Access": "#7c3aed",
+  "Entity Registration": "#1a56db",
+  "People": "#0891b2",
+  "Applications & Passes": "#15803d",
+  "Committees": "#b45309",
+  "Zones & Access": "#0d9488",
+  "Compliance & Enforcement": "#dc2626",
+  "System & Reference": "#64748b",
+};
+
+// What each table holds + the correlations (joins) you can extract from it.
+const INSIGHT: Record<string, string> = {
+  roles: "Login roles. Join to users (who holds each role) and role_permissions (what each may do).",
+  verticals: "Feature-categories. Join to role_permissions to build the full R/W/X access matrix.",
+  role_permissions: "The access matrix. roles × verticals answers “which roles can delete Penalties?”.",
+  users: "Accounts. Correlate to roles (privilege), entities (which org a login belongs to), and everything they created (created_by / uploaded_by / raised_by).",
+  entities: "The hub. One entity → many contracts, individuals, applications, zone entitlements, surrenders, penalties — join to see an org’s whole compliance footprint.",
+  signatories: "Authorised signatories per entity. Join to entities to verify who may sign.",
+  entity_docs: "Docs + expiry. Join to entities to flag an expiring Security Programme / Clearance.",
+  entity_job_roles: "Declared roles → zone-need. Correlate with zone entitlements.",
+  contracts: "Authorise passes + scope. contracts → applications checks every pass sits under a live contract.",
+  individuals: "People. Correlate to entities (sponsor), applications (their passes), bgc_checks (vetting), training_records (AVSEC validity), individual_zones (access).",
+  training_records: "AVSEC training. Join to individuals to auto-deactivate lapsed holders (§13).",
+  pillars: "The 3 permit types. Split MAN / MATERIAL / VEHICLE volumes via applications & pass_types.",
+  pass_types: "Pass variants per pillar. Join to applications for validity rules.",
+  applications: "The workflow core. Correlate to entities (sponsor), contracts, pillars, pass_types, committees, passes (issued card), step_logs (SLA trail), application_zones (access requested).",
+  application_zones: "Zones requested per pass. applications × zones reveals SRA exposure.",
+  step_logs: "Timestamped lifecycle trail. Join applications + users to measure SLA breaches per stage / officer.",
+  committees: "Sittings. Join to committee_reviews (decisions) and committee_members (quorum).",
+  committee_stages: "The 8-step chain. Join to committee_reviews to track where an application sits.",
+  committee_reviews: "Decisions. committees × applications × stages gives approval throughput.",
+  zones: "Airport zones (SRA flag). Join to application_zones / entity_zones / individual_zones / gates for who can go where.",
+  entity_zones: "Org entitlements. Compare with application_zones to detect requests beyond entitlement → escalations.",
+  individual_zones: "Effective per-person access. Join to access_events to validate gate scans.",
+  zone_escalations: "Need-to-access beyond entitlement. Join to entities / applications for the approval trail.",
+  stop_list: "Bar list. Screen by name against individuals / applications before issuance (§9).",
+  surrenders: "Return tracking. Join to applications / entities to compute late-return days + penalties.",
+  penalties: "Enforcement. Correlate to entities / applications / surrenders / users (raised_by) for accountability.",
+  notifications: "Alerts. Join to entities (scoped) and notification_reads (per-user read state).",
+  audit_log: "Immutable trail. Join to roles and object IDs to reconstruct any action history.",
+  guideline_clauses: "Reference clauses. Cite via applications.clause_ref for the governing rule.",
+  user_sessions: "Active sessions. Join to users for concurrent-login + revocation.",
+  auth_events: "Login attempts. Join to users / username for throttle, lockout, brute-force detection.",
+  entity_categories: "Category lookup + basis. Join to entities to split regulatory-mandatory vs operator-devised.",
+  bgc_checks: "Vetting. Join to individuals to block issuance on adverse / expired BGC (§9 · §11).",
+  passes: "Issued cards. Correlate to applications (1:1) and access_events (gate scans) for a card’s live status.",
+  vehicles: "VAP subject detail. Join to applications to validate RC / insurance / PUC / fitness before issue.",
+  materials: "ToT subject detail. Join to applications for item / serial / qty.",
+  attachments: "Polymorphic files. Correlate by owner_type + owner_id to any entity / application / individual / bgc.",
+  committee_members: "Roster. Join to committees / users for quorum + conflict checks.",
+  gates: "Access points. Join to zones and access_events for gate-level traffic.",
+  access_events: "Every scan. Correlate to passes / gates / users (CISF) for real-time access analytics + stop-list hits.",
+  notification_reads: "Read receipts. notifications × users gives delivery / read metrics.",
+  sla_policies: "SLA config. Join to step_logs to flag breaches per stage / pillar.",
+};
+
+interface Edge { from: string; col: string; to: string; refCol: string; }
+const EDGES: Edge[] = [];
+const OUT: Record<string, Edge[]> = {};
+const IN: Record<string, Edge[]> = {};
+for (const t of SCHEMA)
+  for (const c of t.cols)
+    if (c.ref) {
+      const [to, refCol] = c.ref.split(".");
+      const e: Edge = { from: t.name, col: c.name, to, refCol };
+      EDGES.push(e);
+      (OUT[t.name] ??= []).push(e);
+      (IN[to] ??= []).push(e);
+    }
+
+const TABLE_DOMAIN: Record<string, string> = Object.fromEntries(SCHEMA.map((t) => [t.name, t.domain]));
+
 function KeyBadge({ k }: { k?: Key }) {
   if (!k) return null;
   const isPk = k.includes("PK");
@@ -570,14 +643,15 @@ function KeyBadge({ k }: { k?: Key }) {
   );
 }
 
+function TableChip({ name }: { name: string }) {
+  return <span className="db-relchip" style={{ ["--a" as string]: DOMAIN_ACCENT[TABLE_DOMAIN[name]] ?? "#64748b" }}><code>{name}</code></span>;
+}
+
 export default function DatabasePage() {
   const [q, setQ] = useState("");
   const [domain, setDomain] = useState<string | "all">("all");
+  const [view, setView] = useState<"tables" | "relationships">("tables");
 
-  const fkCount = useMemo(
-    () => SCHEMA.reduce((n, t) => n + t.cols.filter((c) => c.key?.includes("FK")).length, 0),
-    [],
-  );
   const colCount = useMemo(() => SCHEMA.reduce((n, t) => n + t.cols.length, 0), []);
 
   const tables = useMemo(() => {
@@ -602,6 +676,13 @@ export default function DatabasePage() {
     return map;
   }, [tables]);
 
+  // Hub ranking — most-referenced tables (by incoming FKs).
+  const hubs = useMemo(
+    () => Object.entries(IN).map(([t, es]) => ({ t, n: es.length })).sort((a, b) => b.n - a.n).slice(0, 8),
+    [],
+  );
+  const maxHub = hubs[0]?.n ?? 1;
+
   return (
     <div className="db-page">
       <header className="db-head">
@@ -609,71 +690,143 @@ export default function DatabasePage() {
           <span className="db-mark"><Database size={20} /></span>
           <div>
             <h1>Database schema</h1>
-            <p className="muted">Complete relational model for the AEP Portal — PostgreSQL · normalized (3NF) · RBAC + audit. Primary keys, foreign keys, datatypes and relationships for every table the website needs.</p>
+            <p className="muted">Complete relational model for the AEP Portal — PostgreSQL · normalized (3NF) · RBAC + audit. Every table, column, datatype, primary/foreign key and relationship the site needs.</p>
           </div>
         </div>
         <div className="db-stats">
           <div className="db-stat"><b>{SCHEMA.length}</b><span>tables</span></div>
           <div className="db-stat"><b>{colCount}</b><span>columns</span></div>
-          <div className="db-stat"><b>{fkCount}</b><span>foreign keys</span></div>
+          <div className="db-stat"><b>{EDGES.length}</b><span>relationships</span></div>
           <div className="db-stat"><b>{DOMAINS.length}</b><span>domains</span></div>
         </div>
       </header>
 
-      <div className="db-controls">
-        <label className="db-search">
-          <Search size={15} />
-          <input placeholder="Search tables, columns or references…" value={q} onChange={(e) => setQ(e.target.value)} />
-        </label>
-        <div className="db-chips">
-          <button className={`chip ${domain === "all" ? "on" : ""}`} onClick={() => setDomain("all")}>All</button>
-          {DOMAINS.map((d) => (
-            <button key={d} className={`chip ${domain === d ? "on" : ""}`} onClick={() => setDomain(d)}>{d}</button>
-          ))}
-        </div>
+      <div className="db-viewtabs">
+        <button className={`db-vtab ${view === "tables" ? "on" : ""}`} onClick={() => setView("tables")}><Table2 size={14} /> Tables</button>
+        <button className={`db-vtab ${view === "relationships" ? "on" : ""}`} onClick={() => setView("relationships")}><Share2 size={14} /> Relationships</button>
       </div>
 
-      <div className="db-legend">
-        <span className="db-key is-pk"><KeyRound size={11} />PK</span> primary key
-        <span className="db-key is-fk"><Link2 size={11} />FK</span> foreign key → referenced table
-        <span className="db-dim">italic type</span> = nullable column
-      </div>
-
-      {tables.length === 0 && <p className="muted db-empty">No tables match “{q}”.</p>}
-
-      {DOMAINS.filter((d) => grouped.has(d)).map((d) => (
-        <section key={d} className="db-domain">
-          <h2 className="db-domain-h">{d} <span className="muted">· {grouped.get(d)!.length}</span></h2>
-          <div className="db-grid">
-            {grouped.get(d)!.map((t) => (
-              <article key={t.name} className="db-table card">
-                <header className="db-table-h">
-                  <Table2 size={14} />
-                  <code>{t.name}</code>
-                </header>
-                <p className="db-purpose">{t.purpose}</p>
-                <div className="db-cols">
-                  <table>
-                    <tbody>
-                      {t.cols.map((c) => (
-                        <tr key={c.name} className={c.key?.includes("PK") ? "is-pkrow" : ""}>
-                          <td className="db-c-name"><code>{c.name}</code></td>
-                          <td className={`db-c-type ${c.nullable ? "nullable" : ""}`}><code>{c.type}</code></td>
-                          <td className="db-c-key"><KeyBadge k={c.key} /></td>
-                          <td className="db-c-ref">
-                            {c.ref && <span className="db-fkref"><Link2 size={10} />{c.ref}</span>}
-                            {c.note && <span className="db-note">{c.note}</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </article>
-            ))}
+      {view === "tables" && (
+        <>
+          <div className="db-controls">
+            <label className="db-search">
+              <Search size={15} />
+              <input placeholder="Search tables, columns or references…" value={q} onChange={(e) => setQ(e.target.value)} />
+            </label>
+            <div className="db-chips">
+              <button className={`chip ${domain === "all" ? "on" : ""}`} onClick={() => setDomain("all")}>All</button>
+              {DOMAINS.map((d) => (
+                <button key={d} className={`chip ${domain === d ? "on" : ""}`} style={domain === d ? { background: DOMAIN_ACCENT[d], borderColor: DOMAIN_ACCENT[d] } : undefined} onClick={() => setDomain(d)}>{d}</button>
+              ))}
+            </div>
           </div>
-        </section>
-      ))}
+
+          <div className="db-legend">
+            <span className="db-key is-pk"><KeyRound size={11} />PK</span> primary key
+            <span className="db-key is-fk"><Link2 size={11} />FK</span> foreign key
+            <span className="db-reldot out" /> references
+            <span className="db-reldot in" /> referenced by
+            <span className="db-dim">italic type</span> = nullable
+          </div>
+
+          {tables.length === 0 && <p className="muted db-empty">No tables match “{q}”.</p>}
+
+          {DOMAINS.filter((d) => grouped.has(d)).map((d) => (
+            <section key={d} className="db-domain">
+              <h2 className="db-domain-h"><span className="db-domain-dot" style={{ background: DOMAIN_ACCENT[d] }} />{d} <span className="muted">· {grouped.get(d)!.length}</span></h2>
+              <div className="db-grid">
+                {grouped.get(d)!.map((t) => {
+                  const out = OUT[t.name] ?? [];
+                  const inc = IN[t.name] ?? [];
+                  const incTables = Array.from(new Set(inc.map((e) => e.from)));
+                  return (
+                    <article key={t.name} className="db-table card" style={{ ["--accent" as string]: DOMAIN_ACCENT[d] }}>
+                      <header className="db-table-h">
+                        <Table2 size={14} />
+                        <code>{t.name}</code>
+                        <span className="db-table-meta">{t.cols.length} cols · {out.length + inc.length} links</span>
+                      </header>
+                      <p className="db-purpose">{t.purpose}</p>
+                      <div className="db-cols">
+                        <table>
+                          <tbody>
+                            {t.cols.map((c) => (
+                              <tr key={c.name} className={c.key?.includes("PK") ? "is-pkrow" : ""}>
+                                <td className="db-c-name"><code>{c.name}</code></td>
+                                <td className={`db-c-type ${c.nullable ? "nullable" : ""}`}><code>{c.type}</code></td>
+                                <td className="db-c-key"><KeyBadge k={c.key} /></td>
+                                <td className="db-c-ref">
+                                  {c.ref && <span className="db-fkref"><Link2 size={10} />{c.ref}</span>}
+                                  {c.note && <span className="db-note">{c.note}</span>}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {(out.length > 0 || incTables.length > 0) && (
+                        <div className="db-rel">
+                          {out.length > 0 && (
+                            <div className="db-rel-row">
+                              <span className="db-rel-l"><span className="db-reldot out" />references</span>
+                              <span className="db-rel-chips">{out.map((e) => <TableChip key={e.col + e.to} name={e.to} />)}</span>
+                            </div>
+                          )}
+                          {incTables.length > 0 && (
+                            <div className="db-rel-row">
+                              <span className="db-rel-l"><span className="db-reldot in" />referenced by</span>
+                              <span className="db-rel-chips">{incTables.map((n) => <TableChip key={n} name={n} />)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {INSIGHT[t.name] && <p className="db-insight"><b>Extract:</b> {INSIGHT[t.name]}</p>}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </>
+      )}
+
+      {view === "relationships" && (
+        <div className="db-relview">
+          <p className="muted db-rel-intro">Every foreign-key correlation in the model — {EDGES.length} relationships across {SCHEMA.length} tables. Each edge is a join you can run: <code>child.column → parent.table.column</code>.</p>
+
+          <section className="db-domain">
+            <h2 className="db-domain-h">Most-connected tables (join hubs)</h2>
+            <div className="db-hubs">
+              {hubs.map((h) => (
+                <div key={h.t} className="db-hub" style={{ ["--accent" as string]: DOMAIN_ACCENT[TABLE_DOMAIN[h.t]] }}>
+                  <div className="db-hub-top"><code>{h.t}</code><b>{h.n}</b></div>
+                  <div className="db-hub-bar"><span style={{ width: `${(h.n / maxHub) * 100}%` }} /></div>
+                  <span className="db-hub-sub">tables point here</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="db-domain">
+            <h2 className="db-domain-h">All relationships (by table)</h2>
+            <div className="db-edges">
+              {SCHEMA.filter((t) => (OUT[t.name] ?? []).length > 0).map((t) => (
+                <div key={t.name} className="db-edge-group card" style={{ ["--accent" as string]: DOMAIN_ACCENT[t.domain] }}>
+                  <div className="db-edge-h"><Table2 size={13} /><code>{t.name}</code></div>
+                  {(OUT[t.name] ?? []).map((e) => (
+                    <div key={e.col + e.to} className="db-edge">
+                      <code className="db-edge-c">{e.col}</code>
+                      <ArrowRight size={12} className="db-edge-arr" />
+                      <TableChip name={e.to} />
+                      <code className="db-edge-rc">.{e.refCol}</code>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
 
       <p className="db-foot mono">
         Conventions: surrogate <code>uuid</code> keys use <code>gen_random_uuid()</code>; human-facing rows keep readable IDs (ENT-·, APP-·, CON-·).

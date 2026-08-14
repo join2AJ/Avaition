@@ -865,3 +865,32 @@ button.vis-cell:hover { border-color: var(--navy-500); }
   .db-hubs, .db-edges { grid-template-columns: 1fr; }
   .db-rel-l { min-width: 0; }
 }
+
+/* ---- ER diagram + copy-join button --------------------------------------- */
+.db-er-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.db-er-select { max-width: 240px; padding: 6px 10px; font-family: var(--mono, monospace); font-size: 13px; }
+.db-er { padding: 10px; }
+.er-wrap { display: flex; flex-direction: column; gap: 8px; }
+.er-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.er-box:hover rect { filter: brightness(0.97); }
+.er-box:hover text { text-decoration: underline; }
+.er-caption { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; align-items: center; padding: 0 4px; }
+.er-caption span { display: inline-flex; align-items: center; gap: 6px; }
+
+.db-relchip.is-btn { cursor: pointer; }
+.db-relchip.is-btn:hover { background: color-mix(in srgb, var(--a) 18%, transparent); }
+
+.db-hub { text-align: left; cursor: pointer; border: 1px solid var(--border, #e6ecf5); border-left: 3px solid var(--accent); background: var(--surface-card, #fff); }
+.db-hub:hover { box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08)); }
+.db-hub.is-focus { box-shadow: 0 0 0 2px var(--accent); }
+
+.db-copy { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600;
+  padding: 3px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--border, #e6ecf5); background: transparent; color: var(--text-secondary); }
+.db-copy:hover { border-color: var(--brand, #1a56db); color: var(--brand, #1a56db); }
+.db-copy.is-done { border-color: var(--green-600, #15803d); color: var(--green-600, #15803d); }
+
+@media (max-width: 720px) {
+  .er-svg { min-width: 560px; }
+  .db-er { overflow-x: auto; }
+}

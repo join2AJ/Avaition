@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Database, KeyRound, Link2, Search, Table2, Share2, ArrowRight } from "lucide-react";
+import { Database, KeyRound, Link2, Search, Table2, Share2, ArrowRight, Copy, Check } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Complete database schema for the AEP Portal — every table, column, datatype,
@@ -643,14 +643,122 @@ function KeyBadge({ k }: { k?: Key }) {
   );
 }
 
-function TableChip({ name }: { name: string }) {
-  return <span className="db-relchip" style={{ ["--a" as string]: DOMAIN_ACCENT[TABLE_DOMAIN[name]] ?? "#64748b" }}><code>{name}</code></span>;
+function TableChip({ name, onClick }: { name: string; onClick?: () => void }) {
+  const style = { ["--a" as string]: DOMAIN_ACCENT[TABLE_DOMAIN[name]] ?? "#64748b" };
+  return onClick
+    ? <button type="button" className="db-relchip is-btn" style={style} onClick={onClick}><code>{name}</code></button>
+    : <span className="db-relchip" style={style}><code>{name}</code></span>;
+}
+
+/** A runnable JOIN for a foreign-key edge — child.col = parent.refCol. */
+function joinSql(e: Edge): string {
+  return `SELECT *\nFROM ${e.from}\nJOIN ${e.to} ON ${e.to}.${e.refCol} = ${e.from}.${e.col}\nLIMIT 50;`;
+}
+
+function CopyBtn({ text, label = "Copy JOIN" }: { text: string; label?: string }) {
+  const [done, setDone] = useState(false);
+  const copy = async (ev: React.MouseEvent) => {
+    ev.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); ta.remove();
+    }
+    setDone(true); setTimeout(() => setDone(false), 1400);
+  };
+  return (
+    <button type="button" className={`db-copy ${done ? "is-done" : ""}`} onClick={copy} title={text}>
+      {done ? <Check size={11} /> : <Copy size={11} />}{done ? "Copied" : label}
+    </button>
+  );
+}
+
+/** Focused ER diagram: `focus` in the centre, tables that reference it on the
+ *  left (children → focus), tables it references on the right (focus → parents).
+ *  Every connector is labelled with the FK column; boxes are clickable. */
+function ErDiagram({ focus, setFocus }: { focus: string; setFocus: (t: string) => void }) {
+  const parents = OUT[focus] ?? [];   // focus references these (focus is child)
+  const children = IN[focus] ?? [];   // these reference focus (focus is parent)
+  const W = 760;
+  const boxW = 150, boxH = 30, cBoxW = 176, cBoxH = 40, rowH = 46, padY = 24;
+  const rows = Math.max(parents.length, children.length, 1);
+  const H = rows * rowH + padY * 2;
+  const midY = H / 2;
+  const leftX = 16, rightX = W - 16 - boxW;
+  const cX = (W - cBoxW) / 2, cY = midY - cBoxH / 2;
+  const accent = DOMAIN_ACCENT[TABLE_DOMAIN[focus]] ?? "#1a56db";
+  const colY = (i: number, n: number) => padY + (rows - n) * rowH / 2 + i * rowH + boxH / 2;
+
+  const box = (name: string, x: number, y: number, w: number, h: number, center = false) => {
+    const a = DOMAIN_ACCENT[TABLE_DOMAIN[name]] ?? "#64748b";
+    return (
+      <g key={`${center ? "c" : ""}${name}-${x}-${y}`} className="er-box" onClick={() => setFocus(name)} style={{ cursor: "pointer" }}>
+        <rect x={x} y={y} width={w} height={h} rx={8} fill={center ? a : "var(--surface-card,#fff)"}
+          stroke={a} strokeWidth={center ? 0 : 1.4} />
+        <text x={x + w / 2} y={y + h / 2 + 4} textAnchor="middle"
+          fontFamily="var(--mono,monospace)" fontSize={center ? 13 : 11.5} fontWeight={center ? 700 : 600}
+          fill={center ? "#fff" : a}>{name}</text>
+      </g>
+    );
+  };
+
+  const connector = (x1: number, y1: number, x2: number, y2: number, label: string, color: string, key: string) => {
+    const mx = (x1 + x2) / 2;
+    return (
+      <g key={key}>
+        <path d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`} fill="none" stroke={color} strokeWidth={1.3} opacity={0.55} markerEnd="url(#er-arrow)" />
+        <text x={mx} y={(y1 + y2) / 2 - 3} textAnchor="middle" fontFamily="var(--mono,monospace)" fontSize={9.5} fill="var(--text-muted,#64748b)">{label}</text>
+      </g>
+    );
+  };
+
+  return (
+    <div className="er-wrap">
+      <svg viewBox={`0 0 ${W} ${H}`} className="er-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Entity-relationship diagram centred on ${focus}`}>
+        <defs>
+          <marker id="er-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted,#94a3b8)" />
+          </marker>
+        </defs>
+        {/* children on the left: child → focus */}
+        {children.map((e, i) => {
+          const y = colY(i, children.length);
+          const color = DOMAIN_ACCENT[TABLE_DOMAIN[e.from]] ?? "#64748b";
+          return (
+            <g key={`ch-${e.from}-${e.col}`}>
+              {connector(leftX + boxW, y, cX, cY + cBoxH / 2, e.col, color, `chl-${e.from}-${e.col}`)}
+              {box(e.from, leftX, y - boxH / 2, boxW, boxH)}
+            </g>
+          );
+        })}
+        {/* parents on the right: focus → parent */}
+        {parents.map((e, i) => {
+          const y = colY(i, parents.length);
+          return (
+            <g key={`pa-${e.to}-${e.col}`}>
+              {connector(cX + cBoxW, cY + cBoxH / 2, rightX, y, e.col, accent, `pal-${e.to}-${e.col}`)}
+              {box(e.to, rightX, y - boxH / 2, boxW, boxH)}
+            </g>
+          );
+        })}
+        {box(focus, cX, cY, cBoxW, cBoxH, true)}
+      </svg>
+      <div className="er-caption muted">
+        <span><span className="db-reldot in" /> left → centre: tables that <b>reference</b> {focus}</span>
+        <span><span className="db-reldot out" /> centre → right: tables {focus} <b>references</b></span>
+        <span>· click any box to re-centre</span>
+      </div>
+    </div>
+  );
 }
 
 export default function DatabasePage() {
   const [q, setQ] = useState("");
   const [domain, setDomain] = useState<string | "all">("all");
   const [view, setView] = useState<"tables" | "relationships">("tables");
+  const [focus, setFocus] = useState("entities");
 
   const colCount = useMemo(() => SCHEMA.reduce((n, t) => n + t.cols.length, 0), []);
 
@@ -792,17 +900,29 @@ export default function DatabasePage() {
 
       {view === "relationships" && (
         <div className="db-relview">
-          <p className="muted db-rel-intro">Every foreign-key correlation in the model — {EDGES.length} relationships across {SCHEMA.length} tables. Each edge is a join you can run: <code>child.column → parent.table.column</code>.</p>
+          <p className="muted db-rel-intro">Every foreign-key correlation in the model — {EDGES.length} relationships across {SCHEMA.length} tables. Each edge is a join you can run: <code>child.column → parent.table.column</code>. Use <b>Copy JOIN</b> to paste a ready query into the SQL console.</p>
+
+          <section className="db-domain">
+            <div className="db-er-head">
+              <h2 className="db-domain-h">ER diagram <span className="muted">· centred on</span></h2>
+              <select className="field db-er-select" value={focus} onChange={(e) => setFocus(e.target.value)}>
+                {SCHEMA.map((t) => <option key={t.name} value={t.name}>{t.name}</option>)}
+              </select>
+            </div>
+            <div className="db-er card">
+              <ErDiagram focus={focus} setFocus={setFocus} />
+            </div>
+          </section>
 
           <section className="db-domain">
             <h2 className="db-domain-h">Most-connected tables (join hubs)</h2>
             <div className="db-hubs">
               {hubs.map((h) => (
-                <div key={h.t} className="db-hub" style={{ ["--accent" as string]: DOMAIN_ACCENT[TABLE_DOMAIN[h.t]] }}>
+                <button key={h.t} className={`db-hub ${focus === h.t ? "is-focus" : ""}`} style={{ ["--accent" as string]: DOMAIN_ACCENT[TABLE_DOMAIN[h.t]] }} onClick={() => setFocus(h.t)}>
                   <div className="db-hub-top"><code>{h.t}</code><b>{h.n}</b></div>
                   <div className="db-hub-bar"><span style={{ width: `${(h.n / maxHub) * 100}%` }} /></div>
-                  <span className="db-hub-sub">tables point here</span>
-                </div>
+                  <span className="db-hub-sub">tables point here · view</span>
+                </button>
               ))}
             </div>
           </section>
@@ -817,8 +937,9 @@ export default function DatabasePage() {
                     <div key={e.col + e.to} className="db-edge">
                       <code className="db-edge-c">{e.col}</code>
                       <ArrowRight size={12} className="db-edge-arr" />
-                      <TableChip name={e.to} />
+                      <TableChip name={e.to} onClick={() => setFocus(e.to)} />
                       <code className="db-edge-rc">.{e.refCol}</code>
+                      <CopyBtn text={joinSql(e)} />
                     </div>
                   ))}
                 </div>

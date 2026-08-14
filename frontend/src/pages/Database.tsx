@@ -78,7 +78,7 @@ const SCHEMA: Tbl[] = [
     cols: [
       { name: "id", type: "varchar(16)", key: "PK", note: "e.g. ENT-01" },
       { name: "name", type: "text" },
-      { name: "category", type: "varchar(32)", note: "GHA, Airline, Caterer, Cargo/CHA, MRO, Govt, Contractor…" },
+      { name: "category", type: "varchar(24)", key: "FK", ref: "entity_categories.code", note: "GHA, Airline, Caterer, Cargo/CHA, MRO, Govt…" },
       { name: "status", type: "varchar(12)", note: "active | suspended | archived" },
       { name: "strength", type: "integer", note: "active individuals; >15 unlocks self-service login" },
       { name: "contract_start", type: "date" },
@@ -377,6 +377,180 @@ const SCHEMA: Tbl[] = [
       { name: "clause", type: "text" },
       { name: "sub_clause", type: "text", nullable: true },
       { name: "description", type: "text" },
+    ],
+  },
+
+  // =========================================================================
+  // PHASE 2 — operational tables a production system needs beyond the core
+  // domain model (issued cards, pillar subjects, BGC, files, gate logs,
+  // sessions, per-user reads, configurable SLA). Grouped into existing
+  // domains so they slot under the same headings.
+  // =========================================================================
+
+  // ---- Identity & Access (security/sessions) ----------------------------
+  {
+    name: "user_sessions", domain: "Identity & Access", purpose: "Active login sessions / tokens (audit-logged, revocable).",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "user_id", type: "uuid", key: "FK", ref: "users.id" },
+      { name: "token_hash", type: "text", note: "hashed JWT/refresh token" },
+      { name: "ip", type: "inet" },
+      { name: "user_agent", type: "text" },
+      { name: "created_at", type: "timestamptz" },
+      { name: "expires_at", type: "timestamptz" },
+      { name: "revoked_at", type: "timestamptz", nullable: true },
+    ],
+  },
+  {
+    name: "auth_events", domain: "Identity & Access", purpose: "Durable login-attempt log — powers throttle + lockout (§ identity assurance).",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "username", type: "varchar(64)", note: "indexed for throttle window" },
+      { name: "user_id", type: "uuid", key: "FK", ref: "users.id", nullable: true },
+      { name: "ip", type: "inet" },
+      { name: "success", type: "boolean" },
+      { name: "reason", type: "varchar(24)", nullable: true, note: "bad_password | locked | ok" },
+      { name: "at", type: "timestamptz" },
+    ],
+  },
+
+  // ---- Entity Registration ----------------------------------------------
+  {
+    name: "entity_categories", domain: "Entity Registration", purpose: "Lookup — normalizes entity category + regulatory basis.",
+    cols: [
+      { name: "code", type: "varchar(24)", key: "PK", note: "GHA, Airline, Caterer, Cargo/CHA, MRO, Govt…" },
+      { name: "label", type: "text" },
+      { name: "operator_devised", type: "boolean", note: "true where AVSEC 02/2022 is silent (e.g. MATERIAL/ToT lifecycle)" },
+    ],
+  },
+
+  // ---- People ------------------------------------------------------------
+  {
+    name: "bgc_checks", domain: "People", purpose: "Background / antecedent verification — gates issuance (§9 · §11).",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "individual_id", type: "varchar(16)", key: "FK", ref: "individuals.id" },
+      { name: "type", type: "varchar(24)", note: "police | antecedent | court" },
+      { name: "authority", type: "text", note: "issuing LEA / district" },
+      { name: "status", type: "varchar(12)", note: "pending | clear | adverse" },
+      { name: "verified_on", type: "date", nullable: true },
+      { name: "valid_until", type: "date", nullable: true, note: "BGC older than 3 months → clarification" },
+      { name: "remarks", type: "text", nullable: true },
+    ],
+  },
+
+  // ---- Applications & Passes --------------------------------------------
+  {
+    name: "passes", domain: "Applications & Passes", purpose: "The issued card after approval — the physical AEP/ToT/VAP.",
+    cols: [
+      { name: "id", type: "varchar(16)", key: "PK", note: "e.g. AEP-0912" },
+      { name: "application_id", type: "varchar(16)", key: "FK", ref: "applications.id", note: "UNIQUE — one card per app" },
+      { name: "pass_no", type: "text", note: "printed serial" },
+      { name: "qr_code", type: "text", note: "signed payload for gate scan" },
+      { name: "chip_uid", type: "text", nullable: true, note: "smart-card UID" },
+      { name: "printed_by", type: "uuid", key: "FK", ref: "users.id" },
+      { name: "printed_at", type: "timestamptz" },
+      { name: "status", type: "varchar(16)", note: "issued | parked | deactivated | revoked | surrendered" },
+      { name: "revoked_reason", type: "text", nullable: true },
+    ],
+  },
+  {
+    name: "vehicles", domain: "Applications & Passes", purpose: "VEHICLE-pillar subject detail for a VAP (§12A).",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "application_id", type: "varchar(16)", key: "FK", ref: "applications.id" },
+      { name: "reg_no", type: "varchar(16)", note: "indexed" },
+      { name: "make_model", type: "text" },
+      { name: "chassis_no", type: "text" },
+      { name: "engine_no", type: "text" },
+      { name: "rc_valid_until", type: "date", nullable: true },
+      { name: "insurance_valid_until", type: "date", nullable: true },
+      { name: "puc_valid_until", type: "date", nullable: true },
+      { name: "fitness_valid_until", type: "date", nullable: true },
+    ],
+  },
+  {
+    name: "materials", domain: "Applications & Passes", purpose: "MATERIAL-pillar subject detail for a ToT (§12B).",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "application_id", type: "varchar(16)", key: "FK", ref: "applications.id" },
+      { name: "item", type: "text" },
+      { name: "serial_no", type: "text", nullable: true },
+      { name: "quantity", type: "integer" },
+      { name: "description", type: "text", nullable: true },
+    ],
+  },
+  {
+    name: "attachments", domain: "Applications & Passes", purpose: "Polymorphic file store (photos, ID proof, BGC report, contract copy).",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "owner_type", type: "varchar(24)", note: "entity | application | individual | contract | bgc" },
+      { name: "owner_id", type: "varchar(24)", note: "polymorphic ref (validated in app)" },
+      { name: "kind", type: "varchar(24)", note: "photo | id_proof | bgc_report | medical | contract_copy" },
+      { name: "file_name", type: "text" },
+      { name: "mime", type: "varchar(64)" },
+      { name: "size_bytes", type: "bigint" },
+      { name: "checksum", type: "text", note: "sha256 — dedupe + integrity" },
+      { name: "uploaded_by", type: "uuid", key: "FK", ref: "users.id" },
+      { name: "uploaded_at", type: "timestamptz" },
+    ],
+  },
+
+  // ---- Committees --------------------------------------------------------
+  {
+    name: "committee_members", domain: "Committees", purpose: "Who sits on a committee (chair / member / quorum).",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "committee_id", type: "varchar(16)", key: "FK", ref: "committees.id" },
+      { name: "user_id", type: "uuid", key: "FK", ref: "users.id", nullable: true },
+      { name: "member_name", type: "text", note: "for external members without a login" },
+      { name: "designation", type: "text" },
+      { name: "seat", type: "varchar(12)", note: "chair | member | secretary" },
+      { name: "quorum_required", type: "boolean" },
+    ],
+  },
+
+  // ---- Zones & Access (gate verification) -------------------------------
+  {
+    name: "gates", domain: "Zones & Access", purpose: "Physical access points where passes are scanned.",
+    cols: [
+      { name: "code", type: "varchar(8)", key: "PK", note: "e.g. G1, CARGO-1" },
+      { name: "name", type: "text" },
+      { name: "type", type: "varchar(16)", note: "passenger | cargo | staff | vehicle" },
+      { name: "zone_code", type: "varchar(6)", key: "FK", ref: "zones.code" },
+    ],
+  },
+  {
+    name: "access_events", domain: "Zones & Access", purpose: "Every gate scan (CISF) — match / mismatch / stop-list hit.",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "pass_id", type: "varchar(16)", key: "FK", ref: "passes.id", nullable: true },
+      { name: "gate_code", type: "varchar(8)", key: "FK", ref: "gates.code" },
+      { name: "verified_by", type: "uuid", key: "FK", ref: "users.id", note: "CISF gate officer" },
+      { name: "scanned_at", type: "timestamptz" },
+      { name: "result", type: "varchar(16)", note: "match | mismatch | expired | stoplist_hit | revoked" },
+      { name: "note", type: "text", nullable: true },
+    ],
+  },
+
+  // ---- System & Reference -----------------------------------------------
+  {
+    name: "notification_reads", domain: "System & Reference", purpose: "Per-user read state for broadcast notifications.",
+    cols: [
+      { name: "notification_id", type: "uuid", key: "PK+FK", ref: "notifications.id" },
+      { name: "user_id", type: "uuid", key: "PK+FK", ref: "users.id" },
+      { name: "read_at", type: "timestamptz" },
+    ],
+  },
+  {
+    name: "sla_policies", domain: "System & Reference", purpose: "Configurable SLA per stage/pillar + escalation target.",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "pillar_key", type: "varchar(10)", key: "FK", ref: "pillars.key", nullable: true, note: "null = all pillars" },
+      { name: "stage", type: "text" },
+      { name: "working_days", type: "integer", note: "SLA clock in WD" },
+      { name: "escalate_to", type: "varchar(48)", key: "FK", ref: "roles.role_key", nullable: true },
+      { name: "clause", type: "text" },
     ],
   },
 ];

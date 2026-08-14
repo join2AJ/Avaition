@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Bell, CheckCheck, Landmark, ClipboardCheck, ShieldCheck, Building2, Cpu } from "lucide-react";
+import { Bell, CheckCheck, Landmark, ClipboardCheck, ShieldCheck, Building2, Cpu, Megaphone, Send } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useData } from "@/app/data";
 import { Pill } from "@/components/ui";
@@ -15,13 +15,24 @@ const SOURCE_META: Record<string, { tone: string; icon: typeof Landmark }> = {
   "System": { tone: "slate", icon: Cpu },
 };
 const TONE_LABEL: Record<string, string> = { ok: "info", warn: "attention", bad: "urgent" };
+// Mirror of the source stamped by the store, for the confirmation line.
+const SOURCE_FOR = (r?: string) =>
+  r === "bcas" ? "BCAS" : r === "operator" ? "Pass Section" : r === "admin" ? "Admin" : "System";
 
 export default function Notifications() {
   const { session } = useAuth();
-  const { notificationsFor, markNotificationsRead } = useData();
+  const { notificationsFor, markNotificationsRead, broadcast } = useData();
   const all = notificationsFor(session!.role, session!.entityId);
   const isOversight = ["admin", "bcas", "operator"].includes(session!.role);
   const [src, setSrc] = useState<string>("all");
+  const [msg, setMsg] = useState("");
+  const [tone, setTone] = useState<"ok" | "warn" | "bad">("warn");
+  const [sent, setSent] = useState(false);
+  const send = () => {
+    if (!msg.trim()) return;
+    broadcast(msg.trim(), tone);
+    setMsg(""); setSent(true); setTimeout(() => setSent(false), 2500);
+  };
 
   const sources = useMemo(() => ["all", ...Array.from(new Set(all.map((n) => n.source || "System")))], [all]);
   const rows = src === "all" ? all : all.filter((n) => (n.source || "System") === src);
@@ -36,6 +47,23 @@ export default function Notifications() {
         </div>
         {unread > 0 && <button className="btn btn-ghost" onClick={markNotificationsRead}><CheckCheck size={15} /> Mark all read</button>}
       </div>
+
+      {isOversight && (
+        <section className="card notif-compose">
+          <div className="notif-compose-h"><Megaphone size={15} /> <b>Broadcast to all</b> <span className="muted">— reaches every login (Admin · BCAS · Pass Section · Entity · CISF · Individual)</span></div>
+          <div className="notif-compose-row">
+            <input className="field" placeholder="Message to release to everyone…" value={msg}
+              onChange={(e) => setMsg(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} />
+            <select className="field notif-tone" value={tone} onChange={(e) => setTone(e.target.value as typeof tone)}>
+              <option value="ok">info</option>
+              <option value="warn">attention</option>
+              <option value="bad">urgent</option>
+            </select>
+            <button className="btn btn-brand" onClick={send} disabled={!msg.trim()}><Send size={14} /> Release</button>
+          </div>
+          {sent && <div className="notif-sent"><CheckCheck size={13} /> Broadcast released to all logins — visible below, stamped {`"${SOURCE_FOR(session!.role)}"`} and audit-logged.</div>}
+        </section>
+      )}
 
       {isOversight && (
         <div className="notif-filter">
@@ -60,7 +88,7 @@ export default function Notifications() {
                   <div className="notif-feed-msg">{n.message}</div>
                   <div className="notif-feed-meta">
                     <span className="mono">{n.ts} IST</span>
-                    <span className="notif-aud mono">to {n.to}</span>
+                    <span className={`notif-aud mono ${n.to === "broadcast" ? "is-all" : ""}`}>{n.to === "broadcast" ? "to ALL" : `to ${n.to}`}</span>
                     <Pill tone={n.tone === "ok" ? "green" : n.tone === "warn" ? "amber" : "red"}>{TONE_LABEL[n.tone]}</Pill>
                     {!n.read && <span className="notif-unread-dot" title="Unread" />}
                   </div>

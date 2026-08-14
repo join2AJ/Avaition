@@ -73,6 +73,7 @@ interface DataCtx {
   applyTrainingHolds: () => number;                       // §13 — auto-deactivate lapsed-training holders' passes
   recordAvsecRefresher: (individualId: string) => void;   // §13 — refresher recorded → reactivate held passes
   markNotificationsRead: () => void;
+  broadcast: (message: string, tone?: Notification["tone"]) => void; // release a notification to ALL logins
   stopList: StopListEntry[];
   isStopListed: (name: string) => StopListEntry | undefined;
   addStopList: (e: StopListEntry) => void;
@@ -146,11 +147,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
   // Notifications a login may see — scoped by audience and (for entity/individual)
   // by their own entity. Shared by the bell and the Notifications page.
+  // "broadcast" reaches EVERY login (a release-to-all message), so it is in
+  // every role's audience — including CISF, which otherwise sees nothing.
   const NOTIF_AUDIENCE: Record<string, string[]> = {
-    admin: ["entity", "bcas", "individual", "operator"],
-    bcas: ["bcas", "entity", "individual", "operator"],
-    operator: ["operator", "entity", "individual", "bcas"],
-    entity: ["entity"], others: ["entity"], individual: ["individual"], cisf: [],
+    admin: ["broadcast", "entity", "bcas", "individual", "operator"],
+    bcas: ["broadcast", "bcas", "entity", "individual", "operator"],
+    operator: ["broadcast", "operator", "entity", "individual", "bcas"],
+    entity: ["broadcast", "entity"], others: ["broadcast", "entity"],
+    individual: ["broadcast", "individual"], cisf: ["broadcast"],
   };
   const notificationsFor: DataCtx["notificationsFor"] = (role, entityId) => {
     const allowed = NOTIF_AUDIENCE[role] ?? [];
@@ -254,6 +258,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications((n) => [{ id: `NTF-${Date.now()}-${Math.floor(Math.random() * 1000)}`, ts: now(), to, entityId, source: src, type, message, tone, read: false }, ...n]);
   };
   const markNotificationsRead: DataCtx["markNotificationsRead"] = () => setNotifications((n) => n.map((x) => ({ ...x, read: true })));
+  // Release a message to every login. Stamped with the sender's source and
+  // audit-logged so oversight can see who pushed the broadcast.
+  const broadcast: DataCtx["broadcast"] = (message, tone = "warn") => {
+    notify("broadcast", "broadcast", message, tone);
+    log("broadcast", "all-users", message, tone);
+  };
 
   const createContract: DataCtx["createContract"] = (c) => {
     const con: Contract = { id: nextId(contracts, "CON-", 2), status: "active", ...c };
@@ -520,7 +530,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       navHidden, setNavVisible, visibleNav, canSee, isTabHidden, notificationsFor,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, recordSurrenderJustification, raiseSurrenderPenalty, resolveSurrenderPenalty,
-      applyTrainingHolds, recordAvsecRefresher, markNotificationsRead,
+      applyTrainingHolds, recordAvsecRefresher, markNotificationsRead, broadcast,
       stopList, isStopListed, addStopList, removeStopList, taepDaysUsed, screenStopList,
       setEntityZones, setRoleZones, createRole, setPermission, recordSlaJustification, log,
     }}>

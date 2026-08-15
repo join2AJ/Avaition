@@ -38,6 +38,36 @@ const ALL: Record<string, NavItem> = {
 /** Every distinct navigable destination (for the Admin access-control matrix). */
 export const NAV_CATALOG: NavItem[] = Object.values(ALL);
 
+// ---- Grouped navigation (top-bar menus) -----------------------------------
+// The flat list is bucketed into a handful of labelled menus so the top nav
+// stays organised instead of showing 16 items at once.
+export interface NavGroup { label: string; items: NavItem[]; }
+const NAV_GROUPS: { label: string; keys: string[] }[] = [
+  { label: "Overview", keys: ["dashboard", "compliance"] },
+  { label: "Processing", keys: ["create", "applications", "committees", "verify"] },
+  { label: "Registry", keys: ["contracts", "status", "zoneaccess", "validity", "profile"] },
+  { label: "Compliance", keys: ["penalties", "stoplist", "notifications", "information"] },
+  { label: "Administration", keys: ["users", "database", "sql", "audit"] },
+];
+const PATH_GROUP_INDEX: Record<string, number> = {};
+NAV_GROUPS.forEach((g, i) => g.keys.forEach((k) => { if (ALL[k]) PATH_GROUP_INDEX[ALL[k].to] = i; }));
+
+/** Bucket a role's (already access-filtered) nav items into ordered menus,
+ *  dropping empty menus. Anything unmapped falls into a trailing "More". */
+export function groupNavItems(items: NavItem[]): NavGroup[] {
+  const buckets: NavItem[][] = NAV_GROUPS.map(() => []);
+  const extra: NavItem[] = [];
+  for (const it of items) {
+    const gi = PATH_GROUP_INDEX[it.to];
+    if (gi === undefined) extra.push(it); else buckets[gi].push(it);
+  }
+  const groups: NavGroup[] = NAV_GROUPS
+    .map((g, i) => ({ label: g.label, items: buckets[i] }))
+    .filter((g) => g.items.length > 0);
+  if (extra.length) groups.push({ label: "More", items: extra });
+  return groups;
+}
+
 /** Sub-tabs inside a page, keyed by the parent nav path. The Admin access-control
  *  matrix can hide any of these per login for finer control. A hidden sub-tab is
  *  stored as `${parentPath}#${subKey}` in the same navHidden map. */

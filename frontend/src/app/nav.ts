@@ -112,7 +112,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   admin: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.material, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users, ALL.database, ALL.sql, ALL.audit],
   bcas: [ALL.dashboard, ALL.compliance, ALL.applications, ALL.material, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users, ALL.audit],
   operator: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.material, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users],
-  cisf: [ALL.verify],
+  cisf: [ALL.verify, ALL.material],
   entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.material, ALL.contracts, ALL.notifications, ALL.information, ALL.profile],
   others: [ALL.dashboard, ALL.create, ALL.applications, ALL.material, ALL.contracts, ALL.notifications, ALL.information, ALL.profile],
   individual: [ALL.dashboard, ALL.applications, ALL.notifications, ALL.information],

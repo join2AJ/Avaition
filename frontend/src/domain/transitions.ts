@@ -6,7 +6,7 @@
 // carries its governing clause (AVSEC Order 02/2022).
 // ---------------------------------------------------------------------------
 
-import type { ApplicationStatus, Role } from "./types";
+import type { ApplicationStatus, Role, Pillar } from "./types";
 
 export interface Transition {
   to: ApplicationStatus;
@@ -51,7 +51,24 @@ export const TRANSITIONS: Partial<Record<ApplicationStatus, Transition[]>> = {
   ],
 };
 
-/** Forward actions a given role may take from a given status. */
-export function transitionsFor(status: ApplicationStatus, role: Role): Transition[] {
-  return (TRANSITIONS[status] ?? []).filter((t) => t.roles.includes(role));
+// MATERIAL (ToT · §12B) does NOT go to committee. Pass Section verifies, then
+// forwards to an authorised signatory (Pass Section IC / CSO / CAO) who approves
+// — after which the material may be carried. The committee_scheduled status is
+// reused as the "pending signatory approval" state for this pillar.
+const MATERIAL_OVERRIDES: Partial<Record<ApplicationStatus, Transition[]>> = {
+  checklist_pending: [
+    { to: "committee_scheduled", label: "Forward to signatory (IC/CSO/CAO)", roles: ["operator", "admin"], tone: "brand", clause: "§12B" },
+    { to: "clarification", label: "Send for clarification", roles: ["operator", "admin"], tone: "amber", needsNote: true, clause: "§8.3.2" },
+    { to: "rejected", label: "Reject", roles: ["operator", "admin"], tone: "red", needsNote: true, clause: "§8.3.2" },
+  ],
+  committee_scheduled: [
+    { to: "approved", label: "Approve ToT — IC / CSO / CAO", roles: ["admin"], tone: "green", clause: "§12B" },
+    { to: "rejected", label: "Reject", roles: ["admin"], tone: "red", needsNote: true, clause: "§12B" },
+  ],
+};
+
+/** Forward actions a given role may take from a given status, for a given pillar. */
+export function transitionsFor(status: ApplicationStatus, role: Role, pillar?: Pillar): Transition[] {
+  const table = pillar === "MATERIAL" && MATERIAL_OVERRIDES[status] ? MATERIAL_OVERRIDES[status] : TRANSITIONS[status];
+  return (table ?? []).filter((t) => t.roles.includes(role));
 }

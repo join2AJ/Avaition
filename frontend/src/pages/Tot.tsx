@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import {
-  Boxes, PackagePlus, ClipboardList, AlertTriangle,
+  Boxes, PackagePlus, ClipboardList, AlertTriangle, Flame,
   Upload, ImagePlus, CheckCircle2, XCircle, Send, Warehouse, FileSpreadsheet,
 } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useData } from "@/app/data";
 import { today } from "@/domain/entitlements";
+import { ZONES } from "@/domain/zones";
 import { Pill } from "@/components/ui";
 import type { NewMaterial, NewTotRequest } from "@/app/data";
 import type { TotRequest, TotStatus, MaterialItem, MaterialMove } from "@/lib/demoData";
@@ -15,8 +16,6 @@ const TYPES = ["tool", "equipment", "food", "consumable", "chemical", "spare"];
 const CATEGORIES = ["A", "B", "C", "D", "E", "F", "G"];
 const UNITS = ["nos", "kg", "litre", "box", "metre"];
 const GATES = ["G3", "G5", "G7", "CARGO-1", "CARGO-2"];
-// Gate → the zone it opens onto (used to check the carrier's AEP covers it).
-const GATE_ZONE: Record<string, string> = { "G3": "P", "G5": "P", "G7": "T", "CARGO-1": "Cd", "CARGO-2": "Ci" };
 const DESIGNATIONS = ["Pass Section IC", "CSO", "CAO"];
 const CONSUME_REASONS = ["consumed", "sold_out", "damaged", "returned"];
 
@@ -50,7 +49,8 @@ export default function Tot() {
   const reqs = useMemo(() => (scoped ? d.totRequests.filter((r) => r.entityId === myEntity) : d.totRequests), [d.totRequests, scoped, myEntity]);
 
   const stat = (code: string) => {
-    const ms = d.materialMoves.filter((m) => m.code === code);
+    // A CISF-rejected gate movement never counts toward the balance.
+    const ms = d.materialMoves.filter((m) => m.code === code && m.verification !== "rejected");
     const sum = (dir: Dir) => ms.filter((m) => m.direction === dir).reduce((s, m) => s + m.quantity, 0);
     const inQ = sum("in"), consumedQ = sum("consumed"), outQ = sum("out");
     return { inside: inQ - consumedQ - outQ, timesIn: ms.filter((m) => m.direction === "in").length };
@@ -84,7 +84,7 @@ export default function Tot() {
 
       {tab === "requests" && <Requests d={d} reqs={reqs} mats={mats} role={role} scoped={scoped} myEntity={myEntity} />}
       {tab === "items" && <Items d={d} mats={mats} stat={stat} scoped={scoped} myEntity={myEntity} />}
-      {tab === "ledger" && <Ledger d={d} mats={mats} moves={moves} reqs={reqs} scoped={scoped} myEntity={myEntity} role={role} />}
+      {tab === "ledger" && <Ledger d={d} mats={mats} moves={moves} reqs={reqs} role={role} />}
       {tab === "inside" && <Inside mats={mats} stat={stat} entities={d.entities} scoped={scoped} />}
     </div>
   );
@@ -107,23 +107,29 @@ function Requests({ d, reqs, mats, role, scoped, myEntity }: {
   const [vf, setVf] = useState("2026-07-06");
   const [vt, setVt] = useState("2026-07-20");
   const [gates, setGates] = useState<string[]>(["G3"]);
-  const [lines, setLines] = useState<{ code: string; qty: number }[]>([]);
+  const [lines, setLines] = useState<{ code: string; qty: number; zone: string }[]>([]);
   const [pick, setPick] = useState(mats[0]?.code ?? "");
   const [pickQty, setPickQty] = useState("1");
+  const [pickZone, setPickZone] = useState(ZONES[0]?.code ?? "P");
+  const [staff, setStaff] = useState<string[]>([]);
+
+  const reqEntity = scoped ? (myEntity ?? "ENT-01") : (mats[0]?.entityId ?? "ENT-01");
+  // Staff you may assign = your agency's members who are AEP holders (AVSEC-current, not stop-listed).
+  const staffPool = d.individuals.filter((i) => i.entityId === reqEntity && validAep(i, undefined, d.isStopListed));
 
   const addLine = () => {
     if (!pick) return;
-    setLines((x) => [...x.filter((l) => l.code !== pick), { code: pick, qty: +pickQty || 1 }]);
+    setLines((x) => [...x.filter((l) => l.code !== pick), { code: pick, qty: +pickQty || 1, zone: pickZone }]);
   };
+  const toggleStaff = (id: string) => setStaff((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
   const submit = () => {
-    if (!purpose.trim() || lines.length === 0) return;
+    if (!purpose.trim() || lines.length === 0 || staff.length === 0) return;
     const payload: NewTotRequest = {
-      entityId: scoped ? (myEntity ?? "ENT-01") : (mats[0]?.entityId ?? "ENT-01"),
-      purpose: purpose.trim(), location, validFrom: vf, validTo: vt, gates,
-      lines: lines.map((l) => ({ code: l.code, qty: l.qty, unit: mats.find((m) => m.code === l.code)?.unit ?? "nos" })),
+      entityId: reqEntity, purpose: purpose.trim(), location, validFrom: vf, validTo: vt, gates, staff,
+      lines: lines.map((l) => ({ code: l.code, qty: l.qty, zone: l.zone, unit: mats.find((m) => m.code === l.code)?.unit ?? "nos" })),
     };
     d.createTotRequest(payload);
-    setPurpose(""); setLines([]);
+    setPurpose(""); setLines([]); setStaff([]);
   };
   const toggleGate = (g: string) => setGates((x) => (x.includes(g) ? x.filter((y) => y !== g) : [...x, g]));
 
@@ -142,21 +148,30 @@ function Requests({ d, reqs, mats, role, scoped, myEntity }: {
             </label>
           </div>
           <div className="tot-lines">
+            <div className="fld-l" style={{ marginBottom: 2 }}>Materials — item · qty · zone</div>
             <div className="tot-lines-add">
               <select className="field" value={pick} onChange={(e) => setPick(e.target.value)}>{mats.map((m) => <option key={m.code} value={m.code}>{m.code} · {m.name}</option>)}</select>
-              <input className="field" type="number" value={pickQty} onChange={(e) => setPickQty(e.target.value)} style={{ maxWidth: 90 }} />
-              <button className="btn btn-ghost" onClick={addLine}>+ Add item</button>
+              <input className="field" type="number" value={pickQty} onChange={(e) => setPickQty(e.target.value)} style={{ maxWidth: 80 }} title="quantity" />
+              <select className="field" value={pickZone} onChange={(e) => setPickZone(e.target.value)} style={{ maxWidth: 130 }} title="zone">{ZONES.map((z) => <option key={z.code} value={z.code}>{z.code} · {z.label.slice(0, 14)}</option>)}</select>
+              <button className="btn btn-ghost" onClick={addLine}>+ Add</button>
             </div>
             {lines.length > 0 && (
               <div className="tot-lines-list">
                 {lines.map((l) => {
                   const m = mats.find((x) => x.code === l.code);
-                  return <span key={l.code} className="tot-line-chip"><code>{l.code}</code> {m?.name} · {l.qty} {m?.unit} <button onClick={() => setLines((x) => x.filter((y) => y.code !== l.code))}>×</button></span>;
+                  return <span key={l.code} className="tot-line-chip"><code>{l.code}</code> {m?.name} · {l.qty} {m?.unit} · <b>zone {l.zone}</b> <button onClick={() => setLines((x) => x.filter((y) => y.code !== l.code))}>×</button></span>;
                 })}
               </div>
             )}
           </div>
-          <button className="btn btn-brand" onClick={submit} disabled={!purpose.trim() || lines.length === 0}><Send size={14} /> Submit ToT request</button>
+          <div className="tot-staff-pick">
+            <div className="fld-l">Assign staff (carriers) <span className="muted">— must be valid AEP holders; select one or more</span></div>
+            <div className="tot-gates">
+              {staffPool.length === 0 && <span className="muted" style={{ fontSize: 12 }}>No AEP-holder staff available for this agency.</span>}
+              {staffPool.map((i) => <button key={i.id} type="button" className={`chip ${staff.includes(i.id) ? "on" : ""}`} onClick={() => toggleStaff(i.id)}>{i.name} · {(i.zones ?? []).join("/")}</button>)}
+            </div>
+          </div>
+          <button className="btn btn-brand" onClick={submit} disabled={!purpose.trim() || lines.length === 0 || staff.length === 0}><Send size={14} /> Submit ToT request</button>
         </section>
       )}
 
@@ -194,8 +209,12 @@ function RequestCard({ r, d, mats, canReview, canApprove, entityName }: {
       <div className="tot-card-lines">
         {r.lines.map((l) => {
           const m = mats.find((x) => x.code === l.code);
-          return <span key={l.code} className="tot-line-chip"><code>{l.code}</code> {m?.name ?? l.code} · {l.qty} {l.unit}</span>;
+          return <span key={l.code} className="tot-line-chip"><code>{l.code}</code> {m?.name ?? l.code} · {l.qty} {l.unit} · <b>zone {l.zone}</b></span>;
         })}
+      </div>
+      <div className="tot-card-staff"><span className="fld-l">Carriers:</span>
+        {(r.staff ?? []).map((sid) => <span key={sid} className="tot-staff-chip">{d.individuals.find((i) => i.id === sid)?.name ?? sid} <span className="tot-aep">AEP ✓</span></span>)}
+        {(r.staff ?? []).length === 0 && <span className="muted" style={{ fontSize: 12 }}>—</span>}
       </div>
 
       <div className="tot-steps">
@@ -338,8 +357,8 @@ function Items({ d, mats, stat, scoped, myEntity }: {
 }
 
 /* =============================== LEDGER ================================== */
-function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
-  d: ReturnType<typeof useData>; mats: MaterialItem[]; moves: MaterialMove[]; reqs: TotRequest[]; scoped: boolean; myEntity?: string; role: string;
+function Ledger({ d, mats, moves, reqs, role }: {
+  d: ReturnType<typeof useData>; mats: MaterialItem[]; moves: MaterialMove[]; reqs: TotRequest[]; role: string;
 }) {
   const approved = reqs.filter((r) => r.status === "approved");
   const [reqId, setReqId] = useState(approved[0]?.id ?? "");
@@ -354,10 +373,12 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
   const [remarks, setRemarks] = useState("");
   const selected = mats.find((m) => m.code === code);
 
-  // Carrier must be a valid AEP holder of the request's agency, whose AEP covers
-  // the gate's zone (skipped for consumption, which happens inside).
-  const zone = direction === "consumed" ? undefined : GATE_ZONE[gate];
-  const eligible = d.individuals.filter((i) => i.entityId === (req?.entityId ?? "") && validAep(i, zone, d.isStopListed));
+  // Carrier must be one of the request's ASSIGNED staff who is a valid AEP holder
+  // covering the material's own zone (skipped for consumption, done inside).
+  const line = req?.lines.find((l) => l.code === code);
+  const itemZone = direction === "consumed" ? undefined : line?.zone;
+  const assignedStaff = (req?.staff ?? []).map((sid) => d.individuals.find((i) => i.id === sid)).filter(Boolean) as Individual[];
+  const eligible = assignedStaff.filter((i) => validAep(i, itemZone, d.isStopListed));
   const carrier = eligible.find((i) => i.id === carrierId) ?? eligible[0];
 
   const [fCode, setFCode] = useState("all");
@@ -374,13 +395,18 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
   const consumedNeedsReason = direction === "consumed" && !remarks.trim();
   const noApproved = approved.length === 0;
   const noCarrier = eligible.length === 0;
-  const record = () => {
-    if (noApproved || noCarrier || !carrier || !code || !qty || consumedNeedsReason) return;
+  // Record a crossing. verification is set by CISF for in/out (allowed/rejected);
+  // consumption is an entity update with no gate check.
+  const doRecord = (verification?: "allowed" | "rejected") => {
+    if (noApproved || !req || !carrier || !code || !qty) return;
+    if (direction === "consumed" && !remarks.trim()) return;
+    if (verification === "rejected" && !remarks.trim()) return; // a rejection needs a reason
     d.recordMaterialMove({
-      code, entityId: scoped ? (myEntity ?? req?.entityId ?? "") : (req?.entityId ?? selected?.entityId ?? ""), requestId: req?.id,
+      code, entityId: req.entityId, requestId: req.id,
       direction, quantity: +qty, unit: selected?.unit ?? "nos",
       gate: direction === "consumed" ? undefined : gate, carrier: carrier.name, carrierId: carrier.id,
       reason: direction === "consumed" ? reason : undefined, remarks: remarks.trim() || undefined,
+      verification: direction === "consumed" ? undefined : verification,
     });
     setRemarks(""); setQty("1");
   };
@@ -400,17 +426,39 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
               <label className="fld"><span className="fld-l">Quantity ({selected?.unit ?? "unit"})</span><input className="field" type="number" value={qty} onChange={(e) => setQty(e.target.value)} /></label>
               {direction !== "consumed" && <label className="fld"><span className="fld-l">Gate</span><select className="field" value={gate} onChange={(e) => setGate(e.target.value)}>{(req?.gates ?? GATES).map((g) => <option key={g}>{g}</option>)}</select></label>}
               {direction === "consumed" && <label className="fld"><span className="fld-l">Disposition</span><select className="field" value={reason} onChange={(e) => setReason(e.target.value)}>{CONSUME_REASONS.map((r) => <option key={r} value={r}>{r.replace("_", " ")}</option>)}</select></label>}
-              <label className="fld"><span className="fld-l">Carrier — valid AEP holder</span>
+              <label className="fld"><span className="fld-l">Carrier — assigned staff (AEP holder)</span>
                 <select className="field" value={carrier?.id ?? ""} onChange={(e) => setCarrierId(e.target.value)} disabled={noCarrier}>
-                  {noCarrier && <option value="">— no valid AEP holder —</option>}
+                  {noCarrier && <option value="">— none eligible —</option>}
                   {eligible.map((i) => <option key={i.id} value={i.id}>{i.name} · {(i.zones ?? []).join("/")} · AEP ✓</option>)}
                 </select>
               </label>
-              <label className="fld mat-remarks"><span className="fld-l">{direction === "consumed" ? "How consumed / sold (required)" : "Remarks"}</span><input className="field" value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder={direction === "consumed" ? "e.g. sold out at crew galley" : "optional"} /></label>
+              <label className="fld mat-remarks"><span className="fld-l">{direction === "consumed" ? "How consumed / sold (required)" : "Remarks / reason (required to reject)"}</span><input className="field" value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder={direction === "consumed" ? "e.g. sold out at crew galley" : "optional; required if rejecting"} /></label>
             </div>
-            {noCarrier && <div className="mat-warn"><AlertTriangle size={13} /> No valid AEP holder of this agency {zone ? `covers gate ${gate} (zone ${zone})` : "is available"} — only a valid AEP holder (AVSEC-current, zone-covering, not stop-listed) may carry ToT material (§9 · §13).</div>}
+
+            {/* CISF gate check — the item photo + the three verifications */}
+            {direction !== "consumed" && (
+              <div className="tot-cisf-panel">
+                {selected?.image ? <img src={selected.image} alt="" className="tot-thumb" /> : <span className="tot-img-ph"><Boxes size={16} /></span>}
+                <div className="tot-checks">
+                  <span className={`tot-check ${carrier ? "ok" : "bad"}`}>{carrier ? <CheckCircle2 size={13} /> : <XCircle size={13} />} 1 · AEP verified{carrier ? ` (${carrier.name})` : ""}</span>
+                  <span className={`tot-check ${carrier ? "ok" : "bad"}`}>{carrier ? <CheckCircle2 size={13} /> : <XCircle size={13} />} 2 · Allowed to carry (assigned staff)</span>
+                  <span className={`tot-check ${line ? "ok" : "bad"}`}>{line ? <CheckCircle2 size={13} /> : <XCircle size={13} />} 3 · Material matches ToT ({selected?.name ?? code}, zone {line?.zone ?? "?"})</span>
+                </div>
+              </div>
+            )}
+
+            {noCarrier && <div className="mat-warn"><AlertTriangle size={13} /> No assigned staff is a valid AEP holder {itemZone ? `covering zone ${itemZone}` : "for this movement"} — only an assigned, AEP-current, zone-covering, non-stop-listed carrier may move ToT material (§9 · §13).</div>}
             {consumedNeedsReason && <div className="mat-warn"><AlertTriangle size={13} /> A consumed / sold-out item must state how it was disposed.</div>}
-            <button className="btn btn-brand" onClick={record} disabled={noCarrier || !carrier || !qty || consumedNeedsReason}>Record movement</button>
+
+            {direction === "consumed" ? (
+              <button className="btn btn-brand" onClick={() => doRecord()} disabled={!carrier || !qty || consumedNeedsReason}><Flame size={14} /> Mark consumed</button>
+            ) : (
+              <div className="tot-actions">
+                <button className="btn btn-brand" onClick={() => doRecord("allowed")} disabled={noCarrier || !carrier || !qty}><CheckCircle2 size={14} /> Allow &amp; stamp</button>
+                <button className="btn btn-ghost" onClick={() => doRecord("rejected")} disabled={noCarrier || !remarks.trim()}><XCircle size={14} /> Reject &amp; stamp</button>
+                <span className="muted" style={{ fontSize: 11.5 }}>CISF decision — recorded with your name &amp; time.</span>
+              </div>
+            )}
           </>
         )}
       </section>
@@ -425,13 +473,13 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
         </div>
         <div className="mat-table-wrap">
           <table className="mat-table">
-            <thead><tr><th>When</th><th>ToT</th><th>Code</th><th>Item</th><th>Dir</th><th>Qty</th><th>Gate</th><th>Carrier</th><th>By</th><th>Note</th></tr></thead>
+            <thead><tr><th>When</th><th>ToT</th><th>Code</th><th>Item</th><th>Dir</th><th>Qty</th><th>Gate</th><th>Carrier</th><th>CISF verify (stamp)</th><th>Note</th></tr></thead>
             <tbody>
               {filtered.length === 0 && <tr><td colSpan={10} className="muted" style={{ padding: 18 }}>No movements match.</td></tr>}
               {filtered.map((m) => {
                 const item = mats.find((x) => x.code === m.code);
                 return (
-                  <tr key={m.id}>
+                  <tr key={m.id} className={m.verification === "rejected" ? "tot-row-rej" : ""}>
                     <td className="mono">{m.ts}</td>
                     <td className="mono muted">{m.requestId ?? "—"}</td>
                     <td><code className="mat-code">{m.code}</code></td>
@@ -440,7 +488,9 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
                     <td className="mono">{m.quantity} {m.unit}</td>
                     <td className="mono">{m.gate ?? "—"}</td>
                     <td>{m.carrier}{m.carrierId && <span className="tot-aep" title="Verified valid AEP holder">AEP ✓</span>}</td>
-                    <td className="mono muted">{m.by}</td>
+                    <td>{m.verification
+                      ? <span className={`tot-verify ${m.verification}`}>{m.verification === "allowed" ? "ALLOWED" : "REJECTED"} · {m.verifiedBy}<br /><span className="mono">{m.verifiedAt}</span></span>
+                      : <span className="muted mono">{m.direction === "consumed" ? "entity update" : "—"}</span>}</td>
                     <td className="muted">{m.reason ? `${m.reason.replace("_", " ")}${m.remarks ? " · " : ""}` : ""}{m.remarks ?? (m.reason ? "" : "—")}</td>
                   </tr>
                 );

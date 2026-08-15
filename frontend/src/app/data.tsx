@@ -45,7 +45,7 @@ export interface NewApplication {
 export interface NewContract { entityId: string; counterparty: string; type: string; start: string; end: string; scope: string; copyFileName?: string; }
 export type NewMaterial = Omit<MaterialItem, "code" | "createdAt" | "createdBy">;
 export type NewMaterialMove = Omit<MaterialMove, "id" | "ts" | "by">;
-export type NewTotRequest = Pick<TotRequest, "entityId" | "purpose" | "location" | "validFrom" | "validTo" | "gates" | "lines">;
+export type NewTotRequest = Pick<TotRequest, "entityId" | "purpose" | "location" | "validFrom" | "validTo" | "gates" | "staff" | "lines">;
 
 export type RoleZoneMatrix = Record<string, string[]>;
 
@@ -484,8 +484,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       withdrawn: "closed", surrendered: "closed",
     };
     const ts = now();
+    // ToT never routes to committee — its "committee_scheduled" state is the
+    // signatory-approval step (Pass Section IC / CSO / CAO).
+    const stage = app.pillar === "MATERIAL" && to === "committee_scheduled" ? "approval" : (stageMap[to] ?? to);
     setApplications((x) => x.map((a) => (a.id === appId
-      ? { ...a, status: to, stepLog: [...(a.stepLog ?? []), { stage: stageMap[to] ?? to, at: ts, by: session?.name, note: opts?.note, action: opts?.action }] }
+      ? { ...a, status: to, stepLog: [...(a.stepLog ?? []), { stage, at: ts, by: session?.name, note: opts?.note, action: opts?.action }] }
       : a)));
     const tone: AuditEntry["tone"] = to === "rejected" || to === "withdrawn" ? "bad"
       : to === "clarification" || to === "surrendered" || to === "parked" || to === "deactivated" ? "warn" : "ok";
@@ -494,7 +497,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     else if (to === "rejected") notify("entity", "pass_rejected", `${app.subject}: application ${appId} rejected${opts?.note ? ` — ${opts.note}` : ""}.`, "bad", app.entityId);
     else if (to === "clarification") notify("entity", "clarification", `${app.subject}: clarification required on ${appId}${opts?.note ? ` — ${opts.note}` : ""}.`, "warn", app.entityId);
     else if (to === "surrendered") { notify("bcas", "pass_surrendered", `${app.subject}: pass ${appId} surrendered${opts?.note ? ` — ${opts.note}` : ""} (§10.7).`, "warn"); appendSurrenders([surrenderRecord(appId, app.subject, app.entityId, "surrendered")]); }
-    else if (to === "approved") notify("operator", "pass_approved", `${app.subject}: ${appId} approved at committee — proceed to issue (§15).`, "ok");
+    else if (to === "approved") notify("operator", "pass_approved", `${app.subject}: ${appId} approved ${app.pillar === "MATERIAL" ? "by authorised signatory (IC/CSO/CAO) — proceed to issue the ToT card (§12B)" : "at committee — proceed to issue (§15)"}.`, "ok");
     else if (to === "parked") notify("entity", "pass_parked", `${app.subject}: pass ${appId} parked for non-use${opts?.note ? ` — ${opts.note}` : ""}. Un-park within norms or it lapses (§10.6).`, "warn", app.entityId);
     else if (to === "deactivated") notify("entity", "pass_deactivated", `${app.subject}: pass ${appId} deactivated (compliance hold)${opts?.note ? ` — ${opts.note}` : ""}. Clear the deficiency to reactivate (§10 · §13).`, "warn", app.entityId);
     else if (to === "withdrawn") {
@@ -565,10 +568,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
   const recordMaterialMove: DataCtx["recordMaterialMove"] = (mv) => {
     const id = nextId(materialMoves, "MOV-", 2);
-    const rec: MaterialMove = { id, ts: now(), by: session?.name ?? sourceForRole(session?.role), ...mv };
+    const stamp = now();
+    const who = session?.name ?? sourceForRole(session?.role);
+    // A CISF gate decision stamps the verifier + time onto the record.
+    const rec: MaterialMove = {
+      id, ts: stamp, by: who, ...mv,
+      verifiedBy: mv.verification ? (mv.verifiedBy ?? who) : mv.verifiedBy,
+      verifiedAt: mv.verification ? (mv.verifiedAt ?? stamp) : mv.verifiedAt,
+    };
     setMaterialMoves((x) => [rec, ...x]);
     const verb = mv.direction === "in" ? "taken IN" : mv.direction === "out" ? "taken OUT" : "CONSUMED";
-    log("material_move", mv.code, `${mv.code} ${verb} ${mv.quantity}${mv.unit}${mv.gate ? ` @ ${mv.gate}` : ""} by ${mv.carrier}`, mv.direction === "consumed" ? "warn" : "ok");
+    const decision = mv.verification ? ` — CISF ${mv.verification.toUpperCase()}` : "";
+    log("material_move", mv.code, `${mv.code} ${verb} ${mv.quantity}${mv.unit}${mv.gate ? ` @ ${mv.gate}` : ""} by ${mv.carrier}${decision}`, mv.verification === "rejected" ? "bad" : mv.direction === "consumed" ? "warn" : "ok");
     return rec;
   };
 

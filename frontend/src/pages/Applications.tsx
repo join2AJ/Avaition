@@ -42,6 +42,8 @@ export default function Applications() {
       ((session!.role === "entity" || session!.role === "others") && current.entityId !== session!.entityId);
     const blocked = !allowed.includes(current.pillar) || outOfScope;
     const st = STATUS_META[current.status];
+    // ToT never sits at "committee" — that state is signatory approval for MATERIAL.
+    const stLabel = current.pillar === "MATERIAL" && current.status === "committee_scheduled" ? "Signatory approval" : st.label;
     return (
       <div className="page">
         <button className="btn btn-ghost back-btn" onClick={() => nav("/app/applications")}>
@@ -61,7 +63,7 @@ export default function Applications() {
                   <span><MapPin size={13} /> <ZoneChips codes={current.zones} /></span>
                 </p>
               </div>
-              <Pill tone={st.tone} dot>{st.label}</Pill>
+              <Pill tone={st.tone} dot>{stLabel}</Pill>
             </div>
             <div className="detail-grid">
               <SlaStepper app={current} />
@@ -92,7 +94,7 @@ export default function Applications() {
 /** Role-gated lifecycle actions that drive a raised pass forward in-app. */
 function ApplicationActions({ app, role }: { app: Application; role: Role }) {
   const { advanceApplication } = useData();
-  const actions = transitionsFor(app.status, role);
+  const actions = transitionsFor(app.status, role, app.pillar);
   const [pending, setPending] = useState<Transition | null>(null);
   const [note, setNote] = useState("");
 

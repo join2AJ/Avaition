@@ -999,3 +999,23 @@ button.vis-cell:hover { border-color: var(--navy-500); }
 
 .tot-aep { margin-left: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; padding: 1px 5px; border-radius: 5px;
   background: rgba(21,128,61,0.12); color: #15803d; vertical-align: 1px; }
+
+/* ToT: staff, CISF gate check, verify column */
+.tot-card-staff { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tot-card-staff .fld-l { margin-right: 2px; }
+.tot-staff-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 9px; border-radius: 999px;
+  background: rgba(21,128,61,0.08); border: 1px solid rgba(21,128,61,0.25); color: var(--text-strong); }
+.tot-staff-pick { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+
+.tot-cisf-panel { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border-radius: 10px;
+  background: var(--surface-app, #f4f7fc); border: 1px solid var(--border, #e6ecf5); }
+.tot-checks { display: flex; flex-direction: column; gap: 4px; }
+.tot-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+.tot-check.ok { color: #15803d; }
+.tot-check.bad { color: #dc2626; }
+
+.tot-verify { font-size: 11px; line-height: 1.35; display: inline-block; }
+.tot-verify.allowed { color: #15803d; font-weight: 600; }
+.tot-verify.rejected { color: #dc2626; font-weight: 700; }
+.tot-verify .mono { color: var(--text-muted); font-weight: 400; }
+.tot-row-rej td { background: rgba(220,38,38,0.05); }

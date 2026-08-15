@@ -7,7 +7,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Compliance from "./pages/Compliance";
 import Applications from "./pages/Applications";
-import MaterialRegister from "./pages/MaterialRegister";
+import Tot from "./pages/Tot";
 import Create from "./pages/Create";
 import Verify from "./pages/Verify";
 import ZoneAccess from "./pages/ZoneAccess";
@@ -61,7 +61,8 @@ export default function App() {
                 <Route path="create" element={<Create />} />
                 <Route path="applications" element={<Applications />} />
                 <Route path="applications/:id" element={<Applications />} />
-                <Route path="material" element={<MaterialRegister />} />
+                <Route path="tot" element={<Tot />} />
+                <Route path="material" element={<Navigate to="/app/tot" replace />} />
                 <Route path="verify" element={<Verify />} />
                 <Route path="zone-access" element={<ZoneAccess />} />
                 <Route path="validity" element={<ValidityMatrix />} />

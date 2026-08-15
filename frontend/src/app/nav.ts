@@ -18,7 +18,7 @@ const ALL: Record<string, NavItem> = {
   compliance: { to: "/app/compliance", label: "Compliance & insights", icon: Gauge },
   create: { to: "/app/create", label: "Create", icon: PlusCircle },
   applications: { to: "/app/applications", label: "Applications", icon: FileStack },
-  material: { to: "/app/material", label: "Material register", icon: Boxes },
+  material: { to: "/app/tot", label: "ToT", icon: Boxes },
   committees: { to: "/app/committees", label: "Committee agenda", icon: CalendarClock },
   contracts: { to: "/app/contracts", label: "Contracts", icon: FileSignature },
   zoneaccess: { to: "/app/zone-access", label: "Zone access DB", icon: Map },

@@ -152,6 +152,7 @@ export interface MaterialItem {
   lengthCm?: number; widthCm?: number; heightCm?: number;
   consumable: boolean;     // consumed inside (food/fuel) vs returnable (tool)
   hazardous: boolean;
+  image?: string;          // data-URL photo so CISF can identify it at the gate
   entityId: string;        // owning agency
   createdBy: string;
   createdAt: string;
@@ -160,15 +161,51 @@ export interface MaterialMove {
   id: string;
   code: string;            // material code
   entityId: string;
+  requestId?: string;      // the approved ToT authorization this crossing is under
   direction: "in" | "consumed" | "out";
   quantity: number;
   unit: string;
   gate?: string;           // gate used for in/out
   carrier: string;         // person who carried it
   ts: string;              // date + time
+  reason?: string;         // for consumed: consumed | sold_out | damaged | returned
   remarks?: string;
   by: string;              // who recorded it
 }
+
+// A ToT authorization request — the approval envelope (§12B). An agency submits
+// items + qty + purpose + validity + gates; Pass Section reviews and forwards it
+// to an authorised signatory (Pass Section IC / CSO / CAO) who approves. Only an
+// approved request permits entry/exit at the gate.
+export type TotStatus = "submitted" | "reviewed" | "approved" | "rejected";
+export interface TotLine { code: string; qty: number; unit: string; }
+export interface TotRequest {
+  id: string;              // TOT-2201
+  entityId: string;
+  purpose: string;         // work / where the material is used
+  location: string;        // zone / area of use
+  validFrom: string; validTo: string;
+  gates: string[];         // gates the entry/exit is permitted from
+  lines: TotLine[];        // items + authorised quantity
+  status: TotStatus;
+  submittedBy: string; submittedAt: string;
+  reviewedBy?: string; reviewedAt?: string;
+  approver?: string; approverDesignation?: string;   // IC | CSO | CAO
+  decidedAt?: string; remark?: string;
+}
+
+export const TOT_REQUESTS: TotRequest[] = [
+  { id: "TOT-2201", entityId: "ENT-01", purpose: "A320 line maintenance", location: "Apron (P)", validFrom: "2026-07-05", validTo: "2026-07-20", gates: ["G3"],
+    lines: [{ code: "MAT-01", qty: 1, unit: "box" }, { code: "MAT-03", qty: 5, unit: "litre" }], status: "approved",
+    submittedBy: "GHA-Delta Ground Services", submittedAt: "2026-07-04 10:00", reviewedBy: "Pass Section Staff", reviewedAt: "2026-07-04 12:20",
+    approver: "R. Menon", approverDesignation: "CSO", decidedAt: "2026-07-04 15:10", remark: "Approved for apron line maintenance." },
+  { id: "TOT-2202", entityId: "ENT-02", purpose: "In-flight catering uplift", location: "Apron (P)", validFrom: "2026-07-05", validTo: "2026-07-12", gates: ["G5"],
+    lines: [{ code: "MAT-04", qty: 200, unit: "nos" }], status: "reviewed",
+    submittedBy: "SkyChef Catering", submittedAt: "2026-07-05 05:40", reviewedBy: "Pass Section Staff", reviewedAt: "2026-07-05 06:05" },
+  { id: "TOT-2203", entityId: "ENT-02", purpose: "Terminal deep-clean", location: "Terminal (T)", validFrom: "2026-07-06", validTo: "2026-07-06", gates: ["G7"],
+    lines: [{ code: "MAT-05", qty: 20, unit: "litre" }], status: "submitted",
+    submittedBy: "SkyChef Catering", submittedAt: "2026-07-05 18:30" },
+];
 
 export const MATERIALS: MaterialItem[] = [
   { code: "MAT-01", name: "AME toolkit (box)", type: "tool", category: "A", unit: "box", weightKg: 12.5, lengthCm: 60, widthCm: 40, heightCm: 25, consumable: false, hazardous: false, entityId: "ENT-01", createdBy: "Operator Admin", createdAt: "2026-07-01" },
@@ -179,10 +216,10 @@ export const MATERIALS: MaterialItem[] = [
 ];
 
 export const MATERIAL_MOVES: MaterialMove[] = [
-  { id: "MOV-06", code: "MAT-04", entityId: "ENT-02", direction: "consumed", quantity: 120, unit: "nos", carrier: "P. Nair", ts: "2026-07-05 11:00", by: "Entity", remarks: "Loaded to aircraft galley" },
-  { id: "MOV-05", code: "MAT-04", entityId: "ENT-02", direction: "in", quantity: 120, unit: "nos", gate: "G5", carrier: "P. Nair", ts: "2026-07-05 06:30", by: "CISF Gate" },
-  { id: "MOV-04", code: "MAT-03", entityId: "ENT-01", direction: "consumed", quantity: 3, unit: "litre", carrier: "V. Singh", ts: "2026-07-05 14:00", by: "Entity", remarks: "Used on A320 hydraulics" },
-  { id: "MOV-03", code: "MAT-03", entityId: "ENT-01", direction: "in", quantity: 5, unit: "litre", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 08:12", by: "CISF Gate" },
-  { id: "MOV-02", code: "MAT-01", entityId: "ENT-01", direction: "out", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 17:40", by: "CISF Gate" },
-  { id: "MOV-01", code: "MAT-01", entityId: "ENT-01", direction: "in", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 08:10", by: "CISF Gate", remarks: "AME line maintenance" },
+  { id: "MOV-06", code: "MAT-04", entityId: "ENT-02", requestId: "TOT-2202", direction: "consumed", quantity: 120, unit: "nos", carrier: "P. Nair", ts: "2026-07-05 11:00", by: "Entity", reason: "consumed", remarks: "Loaded to aircraft galley" },
+  { id: "MOV-05", code: "MAT-04", entityId: "ENT-02", requestId: "TOT-2202", direction: "in", quantity: 120, unit: "nos", gate: "G5", carrier: "P. Nair", ts: "2026-07-05 06:30", by: "CISF Gate" },
+  { id: "MOV-04", code: "MAT-03", entityId: "ENT-01", requestId: "TOT-2201", direction: "consumed", quantity: 3, unit: "litre", carrier: "V. Singh", ts: "2026-07-05 14:00", by: "Entity", reason: "consumed", remarks: "Used on A320 hydraulics" },
+  { id: "MOV-03", code: "MAT-03", entityId: "ENT-01", requestId: "TOT-2201", direction: "in", quantity: 5, unit: "litre", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 08:12", by: "CISF Gate" },
+  { id: "MOV-02", code: "MAT-01", entityId: "ENT-01", requestId: "TOT-2201", direction: "out", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 17:40", by: "CISF Gate" },
+  { id: "MOV-01", code: "MAT-01", entityId: "ENT-01", requestId: "TOT-2201", direction: "in", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 08:10", by: "CISF Gate", remarks: "AME line maintenance" },
 ];

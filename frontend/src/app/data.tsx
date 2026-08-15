@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Application, ApplicationStatus, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage, Role } from "@/domain/types";
 import { NAV_BY_ROLE, canAccess as baseCanAccess, type NavItem } from "./nav";
-import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, SURRENDERS, ZONE_ESCALATIONS, MATERIALS, MATERIAL_MOVES, type AuditEntry, type StopListEntry, type Surrender, type ZoneEscalation, type MaterialItem, type MaterialMove } from "@/lib/demoData";
+import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, SURRENDERS, ZONE_ESCALATIONS, MATERIALS, MATERIAL_MOVES, TOT_REQUESTS, type AuditEntry, type StopListEntry, type Surrender, type ZoneEscalation, type MaterialItem, type MaterialMove, type TotRequest } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
@@ -45,6 +45,7 @@ export interface NewApplication {
 export interface NewContract { entityId: string; counterparty: string; type: string; start: string; end: string; scope: string; copyFileName?: string; }
 export type NewMaterial = Omit<MaterialItem, "code" | "createdAt" | "createdBy">;
 export type NewMaterialMove = Omit<MaterialMove, "id" | "ts" | "by">;
+export type NewTotRequest = Pick<TotRequest, "entityId" | "purpose" | "location" | "validFrom" | "validTo" | "gates" | "lines">;
 
 export type RoleZoneMatrix = Record<string, string[]>;
 
@@ -78,8 +79,13 @@ interface DataCtx {
   broadcast: (message: string, tone?: Notification["tone"]) => void; // release a notification to ALL logins
   materials: MaterialItem[];                                    // ToT material catalogue
   materialMoves: MaterialMove[];                                // ToT in/consumed/out ledger
+  totRequests: TotRequest[];                                    // ToT authorization requests (§12B)
   createMaterial: (m: NewMaterial) => MaterialItem;             // register an item (auto MAT- code)
+  bulkAddMaterials: (rows: NewMaterial[]) => number;            // bulk upload (1000s of items)
   recordMaterialMove: (mv: NewMaterialMove) => MaterialMove;    // log an in/consumed/out crossing
+  createTotRequest: (r: NewTotRequest) => TotRequest;           // entity submits a ToT request
+  reviewTotRequest: (id: string) => void;                       // Pass Section reviews & forwards
+  decideTotRequest: (id: string, decision: "approved" | "rejected", designation: string, remark?: string) => void; // signatory (IC/CSO/CAO)
   stopList: StopListEntry[];
   isStopListed: (name: string) => StopListEntry | undefined;
   addStopList: (e: StopListEntry) => void;
@@ -110,8 +116,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [surrenders, setSurrenders] = useState<Surrender[]>(() => load("aep-surrenders", SURRENDERS));
   const [materials, setMaterials] = useState<MaterialItem[]>(() => load("aep-materials", MATERIALS));
   const [materialMoves, setMaterialMoves] = useState<MaterialMove[]>(() => load("aep-material-moves", MATERIAL_MOVES));
+  const [totRequests, setTotRequests] = useState<TotRequest[]>(() => load("aep-tot-requests", TOT_REQUESTS));
   useEffect(() => { sessionStorage.setItem("aep-materials", JSON.stringify(materials)); }, [materials]);
   useEffect(() => { sessionStorage.setItem("aep-material-moves", JSON.stringify(materialMoves)); }, [materialMoves]);
+  useEffect(() => { sessionStorage.setItem("aep-tot-requests", JSON.stringify(totRequests)); }, [totRequests]);
   const [zoneEscalations, setZoneEscalations] = useState<ZoneEscalation[]>(() => load("aep-escalations", ZONE_ESCALATIONS));
   useEffect(() => { sessionStorage.setItem("aep-escalations", JSON.stringify(zoneEscalations)); }, [zoneEscalations]);
   const resolveEscalation: DataCtx["resolveEscalation"] = (id, status) => {
@@ -541,6 +549,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     log("material_create", code, `${item.name} · ${item.type} · Annexure ${item.category} · ${item.weightKg ?? "?"}kg`, "ok");
     return item;
   };
+  const bulkAddMaterials: DataCtx["bulkAddMaterials"] = (rows) => {
+    if (!rows.length) return 0;
+    setMaterials((prev) => {
+      let seq = prev.map((x) => ({ id: x.code }));
+      const added = rows.map((m) => {
+        const code = nextId(seq, "MAT-", 2);
+        seq = [...seq, { id: code }];
+        return { code, createdAt: today(), createdBy: session?.name ?? "system", ...m } as MaterialItem;
+      });
+      return [...prev, ...added];
+    });
+    log("material_bulk", `${rows.length} items`, `Bulk ToT upload — ${rows.length} materials registered`, "ok");
+    return rows.length;
+  };
   const recordMaterialMove: DataCtx["recordMaterialMove"] = (mv) => {
     const id = nextId(materialMoves, "MOV-", 2);
     const rec: MaterialMove = { id, ts: now(), by: session?.name ?? sourceForRole(session?.role), ...mv };
@@ -550,11 +572,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return rec;
   };
 
+  // ---- ToT authorization workflow (§12B): submit → review → approve --------
+  const createTotRequest: DataCtx["createTotRequest"] = (r) => {
+    const id = nextId(totRequests, "TOT-", 4);
+    const req: TotRequest = { id, status: "submitted", submittedBy: session?.name ?? "Entity", submittedAt: now(), ...r };
+    setTotRequests((x) => [req, ...x]);
+    log("tot_submit", id, `ToT request for ${r.lines.length} item(s) — ${r.purpose}`, "ok");
+    notify("operator", "tot_submitted", `New ToT request ${id} from ${entities.find((e) => e.id === r.entityId)?.name ?? r.entityId} — ${r.lines.length} item(s) for ${r.purpose}. Review & forward (§12B).`, "warn");
+    return req;
+  };
+  const reviewTotRequest: DataCtx["reviewTotRequest"] = (id) => {
+    setTotRequests((x) => x.map((r) => (r.id === id ? { ...r, status: "reviewed", reviewedBy: session?.name ?? "Pass Section", reviewedAt: now() } : r)));
+    const req = totRequests.find((r) => r.id === id);
+    log("tot_review", id, "ToT request reviewed & forwarded to authorised signatory", "ok");
+    notify("bcas", "tot_forwarded", `ToT request ${id} forwarded for signatory approval (IC/CSO/CAO).`, "warn");
+    if (req) notify("entity", "tot_forwarded", `Your ToT request ${id} passed Pass Section review — pending signatory approval.`, "ok", req.entityId);
+  };
+  const decideTotRequest: DataCtx["decideTotRequest"] = (id, decision, designation, remark) => {
+    setTotRequests((x) => x.map((r) => (r.id === id ? { ...r, status: decision, approver: session?.name ?? designation, approverDesignation: designation, decidedAt: now(), remark } : r)));
+    const req = totRequests.find((r) => r.id === id);
+    log("tot_decide", id, `ToT ${decision} by ${designation}${remark ? ` — ${remark}` : ""}`, decision === "approved" ? "ok" : "bad");
+    if (req) notify("entity", "tot_" + decision, `ToT request ${id} ${decision} by ${designation}${decision === "approved" ? ` — entry/exit permitted ${req.validFrom}→${req.validTo} via ${req.gates.join(", ")}.` : `.`}${remark ? ` (${remark})` : ""}`, decision === "approved" ? "ok" : "bad", req.entityId);
+  };
+
   return (
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, surrenders, roleZones, roles,
       zoneEscalations, resolveEscalation,
-      materials, materialMoves, createMaterial, recordMaterialMove,
+      materials, materialMoves, totRequests, createMaterial, bulkAddMaterials, recordMaterialMove,
+      createTotRequest, reviewTotRequest, decideTotRequest,
       navHidden, setNavVisible, visibleNav, canSee, isTabHidden, notificationsFor,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, recordSurrenderJustification, raiseSurrenderPenalty, resolveSurrenderPenalty,

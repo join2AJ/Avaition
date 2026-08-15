@@ -957,3 +957,42 @@ button.vis-cell:hover { border-color: var(--navy-500); }
 .mat-haz { color: #dc2626; }
 
 @media (max-width: 720px) { .mat-filter-summary { margin-left: 0; width: 100%; } }
+
+/* ===== ToT extras: requests, steps, images, bulk ========================= */
+.tot-gates { display: flex; gap: 6px; flex-wrap: wrap; }
+.tot-gates .chip { cursor: pointer; border: 1px solid var(--border, #e6ecf5); background: transparent; color: var(--text-secondary); padding: 5px 11px; border-radius: 999px; font-size: 12px; }
+.tot-gates .chip.on { background: var(--brand, #1a56db); border-color: var(--brand, #1a56db); color: #fff; }
+
+.tot-lines { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.tot-lines-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tot-lines-add .field { max-width: 320px; }
+.tot-lines-list { display: flex; gap: 6px; flex-wrap: wrap; }
+.tot-line-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 9px; border-radius: 999px;
+  background: var(--surface-app, #eef2f8); border: 1px solid var(--border, #e6ecf5); }
+.tot-line-chip code { color: var(--brand, #1a56db); font-weight: 700; }
+.tot-line-chip button { border: 0; background: none; cursor: pointer; color: var(--text-muted); font-size: 14px; line-height: 1; }
+
+.tot-req-list { display: flex; flex-direction: column; gap: 12px; }
+.tot-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.tot-card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tot-card-meta { font-size: 11.5px; }
+.tot-card-lines { display: flex; gap: 6px; flex-wrap: wrap; }
+.tot-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.tot-step { display: flex; align-items: flex-start; gap: 7px; flex: 1; min-width: 160px; padding: 8px 10px; border-radius: 9px; background: var(--surface-app, #f4f7fc); }
+.tot-step-dot { width: 9px; height: 9px; border-radius: 999px; background: var(--border, #cbd5e1); margin-top: 4px; flex: none; }
+.tot-step.done { background: rgba(21,128,61,0.08); } .tot-step.done .tot-step-dot { background: #15803d; }
+.tot-step.bad { background: rgba(220,38,38,0.08); } .tot-step.bad .tot-step-dot { background: #dc2626; }
+.tot-step b { font-size: 12px; color: var(--text-strong); display: block; }
+.tot-step small { font-size: 10.5px; color: var(--text-muted); }
+.tot-remark { font-size: 12px; font-style: italic; }
+.tot-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+.tot-approve .field.mini { max-width: 170px; }
+
+.tot-img-input { display: flex; align-items: center; gap: 8px; }
+.tot-img-input input[type=file] { font-size: 11px; max-width: 150px; }
+.tot-img-ph { width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-app, #eef2f8); border: 1px dashed var(--border, #cbd5e1); color: var(--text-muted); flex: none; }
+.tot-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border, #e6ecf5); flex: none; }
+.tot-thumb.sm { width: 30px; height: 30px; }
+.tot-thumb.sm.ph { display: grid; place-items: center; background: var(--surface-app, #eef2f8); color: var(--text-muted); }
+.tot-bulk-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tot-bulk-actions .btn label { cursor: pointer; }

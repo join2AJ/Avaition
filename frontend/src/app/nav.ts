@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FileStack, CalendarClock, ShieldAlert,
-  IdCard, Users, Map, ScrollText, ScanSearch, PlusCircle, Timer, ClipboardCheck, FileSignature, Gauge, Ban, Info, Bell, Database, TerminalSquare, type LucideIcon,
+  IdCard, Users, Map, ScrollText, ScanSearch, PlusCircle, Timer, ClipboardCheck, FileSignature, Gauge, Ban, Info, Bell, Database, TerminalSquare, Boxes, type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/domain/types";
 
@@ -18,6 +18,7 @@ const ALL: Record<string, NavItem> = {
   compliance: { to: "/app/compliance", label: "Compliance & insights", icon: Gauge },
   create: { to: "/app/create", label: "Create", icon: PlusCircle },
   applications: { to: "/app/applications", label: "Applications", icon: FileStack },
+  material: { to: "/app/material", label: "Material register", icon: Boxes },
   committees: { to: "/app/committees", label: "Committee agenda", icon: CalendarClock },
   contracts: { to: "/app/contracts", label: "Contracts", icon: FileSignature },
   zoneaccess: { to: "/app/zone-access", label: "Zone access DB", icon: Map },
@@ -44,7 +45,7 @@ export const NAV_CATALOG: NavItem[] = Object.values(ALL);
 export interface NavGroup { label: string; items: NavItem[]; }
 const NAV_GROUPS: { label: string; keys: string[] }[] = [
   { label: "Overview", keys: ["dashboard", "compliance"] },
-  { label: "Processing", keys: ["create", "applications", "committees", "verify"] },
+  { label: "Processing", keys: ["create", "applications", "material", "committees", "verify"] },
   { label: "Registry", keys: ["contracts", "status", "zoneaccess", "validity", "profile"] },
   { label: "Compliance", keys: ["penalties", "stoplist", "notifications", "information"] },
   { label: "Administration", keys: ["users", "database", "sql", "audit"] },
@@ -108,11 +109,11 @@ export function canAccess(role: Role, path: string): boolean {
 }
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
-  admin: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users, ALL.database, ALL.sql, ALL.audit],
-  bcas: [ALL.dashboard, ALL.compliance, ALL.applications, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users, ALL.audit],
-  operator: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users],
+  admin: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.material, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users, ALL.database, ALL.sql, ALL.audit],
+  bcas: [ALL.dashboard, ALL.compliance, ALL.applications, ALL.material, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users, ALL.audit],
+  operator: [ALL.dashboard, ALL.compliance, ALL.create, ALL.applications, ALL.material, ALL.committees, ALL.contracts, ALL.status, ALL.zoneaccess, ALL.validity, ALL.penalties, ALL.stoplist, ALL.notifications, ALL.information, ALL.users],
   cisf: [ALL.verify],
-  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.contracts, ALL.notifications, ALL.information, ALL.profile],
-  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.contracts, ALL.notifications, ALL.information, ALL.profile],
+  entity: [ALL.dashboard, ALL.create, ALL.applications, ALL.material, ALL.contracts, ALL.notifications, ALL.information, ALL.profile],
+  others: [ALL.dashboard, ALL.create, ALL.applications, ALL.material, ALL.contracts, ALL.notifications, ALL.information, ALL.profile],
   individual: [ALL.dashboard, ALL.applications, ALL.notifications, ALL.information],
 };

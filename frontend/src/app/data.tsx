@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Application, ApplicationStatus, Entity, Individual, Pillar, PassType, Signatory, EntityDoc, EntityJobRole, Contract, Notification, ApprovalStage, Role } from "@/domain/types";
 import { NAV_BY_ROLE, canAccess as baseCanAccess, type NavItem } from "./nav";
-import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, SURRENDERS, ZONE_ESCALATIONS, type AuditEntry, type StopListEntry, type Surrender, type ZoneEscalation } from "@/lib/demoData";
+import { APPLICATIONS, ENTITIES, INDIVIDUALS, AUDIT, CONTRACTS, STOP_LIST, SURRENDERS, ZONE_ESCALATIONS, MATERIALS, MATERIAL_MOVES, type AuditEntry, type StopListEntry, type Surrender, type ZoneEscalation, type MaterialItem, type MaterialMove } from "@/lib/demoData";
 import { useAuth } from "./auth";
 import { ROLE_LABEL } from "@/domain/roles";
 import { ROLE_ZONES, computeValidTo, today } from "@/domain/entitlements";
@@ -43,6 +43,8 @@ export interface NewApplication {
   jobRole?: string; validFrom: string; contractId?: string; escort?: string;
 }
 export interface NewContract { entityId: string; counterparty: string; type: string; start: string; end: string; scope: string; copyFileName?: string; }
+export type NewMaterial = Omit<MaterialItem, "code" | "createdAt" | "createdBy">;
+export type NewMaterialMove = Omit<MaterialMove, "id" | "ts" | "by">;
 
 export type RoleZoneMatrix = Record<string, string[]>;
 
@@ -74,6 +76,10 @@ interface DataCtx {
   recordAvsecRefresher: (individualId: string) => void;   // §13 — refresher recorded → reactivate held passes
   markNotificationsRead: () => void;
   broadcast: (message: string, tone?: Notification["tone"]) => void; // release a notification to ALL logins
+  materials: MaterialItem[];                                    // ToT material catalogue
+  materialMoves: MaterialMove[];                                // ToT in/consumed/out ledger
+  createMaterial: (m: NewMaterial) => MaterialItem;             // register an item (auto MAT- code)
+  recordMaterialMove: (mv: NewMaterialMove) => MaterialMove;    // log an in/consumed/out crossing
   stopList: StopListEntry[];
   isStopListed: (name: string) => StopListEntry | undefined;
   addStopList: (e: StopListEntry) => void;
@@ -102,6 +108,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>(() => load("aep-notifs", []));
   const [stopList, setStopList] = useState<StopListEntry[]>(() => load("aep-stoplist", STOP_LIST));
   const [surrenders, setSurrenders] = useState<Surrender[]>(() => load("aep-surrenders", SURRENDERS));
+  const [materials, setMaterials] = useState<MaterialItem[]>(() => load("aep-materials", MATERIALS));
+  const [materialMoves, setMaterialMoves] = useState<MaterialMove[]>(() => load("aep-material-moves", MATERIAL_MOVES));
+  useEffect(() => { sessionStorage.setItem("aep-materials", JSON.stringify(materials)); }, [materials]);
+  useEffect(() => { sessionStorage.setItem("aep-material-moves", JSON.stringify(materialMoves)); }, [materialMoves]);
   const [zoneEscalations, setZoneEscalations] = useState<ZoneEscalation[]>(() => load("aep-escalations", ZONE_ESCALATIONS));
   useEffect(() => { sessionStorage.setItem("aep-escalations", JSON.stringify(zoneEscalations)); }, [zoneEscalations]);
   const resolveEscalation: DataCtx["resolveEscalation"] = (id, status) => {
@@ -523,10 +533,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     notify("entity", "training_ok", `${ind.name}: AVSEC refresher recorded (valid to ${newExpiry}) — any held pass reactivated (§13).`, "ok", ind.entityId);
   };
 
+  // ---- Material Tracking (ToT) --------------------------------------------
+  const createMaterial: DataCtx["createMaterial"] = (m) => {
+    const code = nextId(materials.map((x) => ({ id: x.code })), "MAT-", 2);
+    const item: MaterialItem = { code, createdAt: today(), createdBy: session?.name ?? "system", ...m };
+    setMaterials((x) => [...x, item]);
+    log("material_create", code, `${item.name} · ${item.type} · Annexure ${item.category} · ${item.weightKg ?? "?"}kg`, "ok");
+    return item;
+  };
+  const recordMaterialMove: DataCtx["recordMaterialMove"] = (mv) => {
+    const id = nextId(materialMoves, "MOV-", 2);
+    const rec: MaterialMove = { id, ts: now(), by: session?.name ?? sourceForRole(session?.role), ...mv };
+    setMaterialMoves((x) => [rec, ...x]);
+    const verb = mv.direction === "in" ? "taken IN" : mv.direction === "out" ? "taken OUT" : "CONSUMED";
+    log("material_move", mv.code, `${mv.code} ${verb} ${mv.quantity}${mv.unit}${mv.gate ? ` @ ${mv.gate}` : ""} by ${mv.carrier}`, mv.direction === "consumed" ? "warn" : "ok");
+    return rec;
+  };
+
   return (
     <Ctx.Provider value={{
       entities, individuals, applications, audit, contracts, notifications, surrenders, roleZones, roles,
       zoneEscalations, resolveEscalation,
+      materials, materialMoves, createMaterial, recordMaterialMove,
       navHidden, setNavVisible, visibleNav, canSee, isTabHidden, notificationsFor,
       createEntity, createIndividual, createApplication, advanceApplication, createContract, terminateContract, renewContract,
       advanceApproval, recordSurrenderJustification, raiseSurrenderPenalty, resolveSurrenderPenalty,

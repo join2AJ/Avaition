@@ -138,3 +138,51 @@ export const APPLICATIONS: Application[] = [
   { id: "APP-2262", pillar: "MAN", entityId: "ENT-04", subject: "B. Kulkarni", passType: "BAEP", zones: ["P", "T"], status: "withdrawn", createdBy: "Pass Section", createdAt: "2026-03-10", clauseRef: "§5",
     stepLog: [{ stage: "handover", at: "2026-03-10 11:00", by: "Pass Section Staff", action: "Issue & print pass" }, { stage: "closed", at: "2026-06-28 16:20", by: "BCAS Officer", action: "Withdraw (adverse BGC / cancel)", note: "Adverse police verification received — pass withdrawn (§11)" }] },
 ];
+
+// --- Material Tracking (ToT) -------------------------------------------------
+// ToT is material custody: each item gets a code, and every IN / CONSUMED / OUT
+// crossing is logged so an agency (and Admin) can reconcile what is still inside.
+export interface MaterialItem {
+  code: string;            // MAT-01 — each item is assigned a code
+  name: string;
+  type: string;            // tool | equipment | food | consumable | chemical | spare
+  category: string;        // AEP-guideline annexure class A–G
+  unit: string;            // nos | kg | litre | box | metre
+  weightKg?: number;
+  lengthCm?: number; widthCm?: number; heightCm?: number;
+  consumable: boolean;     // consumed inside (food/fuel) vs returnable (tool)
+  hazardous: boolean;
+  entityId: string;        // owning agency
+  createdBy: string;
+  createdAt: string;
+}
+export interface MaterialMove {
+  id: string;
+  code: string;            // material code
+  entityId: string;
+  direction: "in" | "consumed" | "out";
+  quantity: number;
+  unit: string;
+  gate?: string;           // gate used for in/out
+  carrier: string;         // person who carried it
+  ts: string;              // date + time
+  remarks?: string;
+  by: string;              // who recorded it
+}
+
+export const MATERIALS: MaterialItem[] = [
+  { code: "MAT-01", name: "AME toolkit (box)", type: "tool", category: "A", unit: "box", weightKg: 12.5, lengthCm: 60, widthCm: 40, heightCm: 25, consumable: false, hazardous: false, entityId: "ENT-01", createdBy: "Operator Admin", createdAt: "2026-07-01" },
+  { code: "MAT-02", name: "Torque wrench", type: "tool", category: "A", unit: "nos", weightKg: 3.2, consumable: false, hazardous: false, entityId: "ENT-01", createdBy: "Operator Admin", createdAt: "2026-07-01" },
+  { code: "MAT-03", name: "Hydraulic oil", type: "chemical", category: "E", unit: "litre", weightKg: 0.9, consumable: true, hazardous: true, entityId: "ENT-01", createdBy: "Operator Admin", createdAt: "2026-07-02" },
+  { code: "MAT-04", name: "Crew meal trays", type: "food", category: "C", unit: "nos", weightKg: 0.6, consumable: true, hazardous: false, entityId: "ENT-02", createdBy: "Caterer", createdAt: "2026-07-02" },
+  { code: "MAT-05", name: "Cleaning detergent", type: "consumable", category: "E", unit: "litre", weightKg: 1.0, consumable: true, hazardous: false, entityId: "ENT-02", createdBy: "Caterer", createdAt: "2026-07-03" },
+];
+
+export const MATERIAL_MOVES: MaterialMove[] = [
+  { id: "MOV-06", code: "MAT-04", entityId: "ENT-02", direction: "consumed", quantity: 120, unit: "nos", carrier: "P. Nair", ts: "2026-07-05 11:00", by: "Entity", remarks: "Loaded to aircraft galley" },
+  { id: "MOV-05", code: "MAT-04", entityId: "ENT-02", direction: "in", quantity: 120, unit: "nos", gate: "G5", carrier: "P. Nair", ts: "2026-07-05 06:30", by: "CISF Gate" },
+  { id: "MOV-04", code: "MAT-03", entityId: "ENT-01", direction: "consumed", quantity: 3, unit: "litre", carrier: "V. Singh", ts: "2026-07-05 14:00", by: "Entity", remarks: "Used on A320 hydraulics" },
+  { id: "MOV-03", code: "MAT-03", entityId: "ENT-01", direction: "in", quantity: 5, unit: "litre", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 08:12", by: "CISF Gate" },
+  { id: "MOV-02", code: "MAT-01", entityId: "ENT-01", direction: "out", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 17:40", by: "CISF Gate" },
+  { id: "MOV-01", code: "MAT-01", entityId: "ENT-01", direction: "in", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 08:10", by: "CISF Gate", remarks: "AME line maintenance" },
+];

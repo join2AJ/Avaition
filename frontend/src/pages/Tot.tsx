@@ -5,16 +5,30 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useData } from "@/app/data";
+import { today } from "@/domain/entitlements";
 import { Pill } from "@/components/ui";
 import type { NewMaterial, NewTotRequest } from "@/app/data";
 import type { TotRequest, TotStatus, MaterialItem, MaterialMove } from "@/lib/demoData";
+import type { Individual } from "@/domain/types";
 
 const TYPES = ["tool", "equipment", "food", "consumable", "chemical", "spare"];
 const CATEGORIES = ["A", "B", "C", "D", "E", "F", "G"];
 const UNITS = ["nos", "kg", "litre", "box", "metre"];
 const GATES = ["G3", "G5", "G7", "CARGO-1", "CARGO-2"];
+// Gate → the zone it opens onto (used to check the carrier's AEP covers it).
+const GATE_ZONE: Record<string, string> = { "G3": "P", "G5": "P", "G7": "T", "CARGO-1": "Cd", "CARGO-2": "Ci" };
 const DESIGNATIONS = ["Pass Section IC", "CSO", "CAO"];
 const CONSUME_REASONS = ["consumed", "sold_out", "damaged", "returned"];
+
+// A valid AEP holder (AVSEC 02/2022): registered individual whose AVSEC training
+// is current (§13 — a lapse deactivates the AEP), whose zones cover the gate's
+// zone (need-to-access), and who is not on the Stop List (§9).
+function validAep(ind: Individual, zone: string | undefined, isStopListed: (n: string) => unknown): boolean {
+  const t = today();
+  const trainingOk = !ind.avsecTrainingExpiry || ind.avsecTrainingExpiry >= t;
+  const zoneOk = !zone || (ind.zones ?? []).includes(zone);
+  return trainingOk && zoneOk && !isStopListed(ind.name);
+}
 
 type Dir = "in" | "consumed" | "out";
 const DIR_META: Record<Dir, { label: string; tone: "green" | "amber" | "red" }> = {
@@ -335,10 +349,16 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
   const [direction, setDirection] = useState<Dir>("in");
   const [qty, setQty] = useState("1");
   const [gate, setGate] = useState(req?.gates[0] ?? GATES[0]);
-  const [carrier, setCarrier] = useState("");
+  const [carrierId, setCarrierId] = useState("");
   const [reason, setReason] = useState(CONSUME_REASONS[0]);
   const [remarks, setRemarks] = useState("");
   const selected = mats.find((m) => m.code === code);
+
+  // Carrier must be a valid AEP holder of the request's agency, whose AEP covers
+  // the gate's zone (skipped for consumption, which happens inside).
+  const zone = direction === "consumed" ? undefined : GATE_ZONE[gate];
+  const eligible = d.individuals.filter((i) => i.entityId === (req?.entityId ?? "") && validAep(i, zone, d.isStopListed));
+  const carrier = eligible.find((i) => i.id === carrierId) ?? eligible[0];
 
   const [fCode, setFCode] = useState("all");
   const [fGate, setFGate] = useState("all");
@@ -353,15 +373,16 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
 
   const consumedNeedsReason = direction === "consumed" && !remarks.trim();
   const noApproved = approved.length === 0;
+  const noCarrier = eligible.length === 0;
   const record = () => {
-    if (noApproved || !code || !carrier.trim() || !qty || consumedNeedsReason) return;
+    if (noApproved || noCarrier || !carrier || !code || !qty || consumedNeedsReason) return;
     d.recordMaterialMove({
       code, entityId: scoped ? (myEntity ?? req?.entityId ?? "") : (req?.entityId ?? selected?.entityId ?? ""), requestId: req?.id,
       direction, quantity: +qty, unit: selected?.unit ?? "nos",
-      gate: direction === "consumed" ? undefined : gate, carrier: carrier.trim(),
+      gate: direction === "consumed" ? undefined : gate, carrier: carrier.name, carrierId: carrier.id,
       reason: direction === "consumed" ? reason : undefined, remarks: remarks.trim() || undefined,
     });
-    setCarrier(""); setRemarks(""); setQty("1");
+    setRemarks(""); setQty("1");
   };
 
   return (
@@ -379,11 +400,17 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
               <label className="fld"><span className="fld-l">Quantity ({selected?.unit ?? "unit"})</span><input className="field" type="number" value={qty} onChange={(e) => setQty(e.target.value)} /></label>
               {direction !== "consumed" && <label className="fld"><span className="fld-l">Gate</span><select className="field" value={gate} onChange={(e) => setGate(e.target.value)}>{(req?.gates ?? GATES).map((g) => <option key={g}>{g}</option>)}</select></label>}
               {direction === "consumed" && <label className="fld"><span className="fld-l">Disposition</span><select className="field" value={reason} onChange={(e) => setReason(e.target.value)}>{CONSUME_REASONS.map((r) => <option key={r} value={r}>{r.replace("_", " ")}</option>)}</select></label>}
-              <label className="fld"><span className="fld-l">Carrier (who took it)</span><input className="field" value={carrier} onChange={(e) => setCarrier(e.target.value)} placeholder="person name" /></label>
+              <label className="fld"><span className="fld-l">Carrier — valid AEP holder</span>
+                <select className="field" value={carrier?.id ?? ""} onChange={(e) => setCarrierId(e.target.value)} disabled={noCarrier}>
+                  {noCarrier && <option value="">— no valid AEP holder —</option>}
+                  {eligible.map((i) => <option key={i.id} value={i.id}>{i.name} · {(i.zones ?? []).join("/")} · AEP ✓</option>)}
+                </select>
+              </label>
               <label className="fld mat-remarks"><span className="fld-l">{direction === "consumed" ? "How consumed / sold (required)" : "Remarks"}</span><input className="field" value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder={direction === "consumed" ? "e.g. sold out at crew galley" : "optional"} /></label>
             </div>
+            {noCarrier && <div className="mat-warn"><AlertTriangle size={13} /> No valid AEP holder of this agency {zone ? `covers gate ${gate} (zone ${zone})` : "is available"} — only a valid AEP holder (AVSEC-current, zone-covering, not stop-listed) may carry ToT material (§9 · §13).</div>}
             {consumedNeedsReason && <div className="mat-warn"><AlertTriangle size={13} /> A consumed / sold-out item must state how it was disposed.</div>}
-            <button className="btn btn-brand" onClick={record} disabled={!carrier.trim() || !qty || consumedNeedsReason}>Record movement</button>
+            <button className="btn btn-brand" onClick={record} disabled={noCarrier || !carrier || !qty || consumedNeedsReason}>Record movement</button>
           </>
         )}
       </section>
@@ -412,7 +439,7 @@ function Ledger({ d, mats, moves, reqs, scoped, myEntity, role }: {
                     <td><Pill tone={DIR_META[m.direction].tone}>{DIR_META[m.direction].label}</Pill></td>
                     <td className="mono">{m.quantity} {m.unit}</td>
                     <td className="mono">{m.gate ?? "—"}</td>
-                    <td>{m.carrier}</td>
+                    <td>{m.carrier}{m.carrierId && <span className="tot-aep" title="Verified valid AEP holder">AEP ✓</span>}</td>
                     <td className="mono muted">{m.by}</td>
                     <td className="muted">{m.reason ? `${m.reason.replace("_", " ")}${m.remarks ? " · " : ""}` : ""}{m.remarks ?? (m.reason ? "" : "—")}</td>
                   </tr>

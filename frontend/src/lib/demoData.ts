@@ -41,8 +41,9 @@ export const INDIVIDUALS: Individual[] = [
   { id: "IND-02", entityId: "ENT-01", name: "M. Iyer", jobRole: "Baggage Handler", hasLogin: false, state: "Tamil Nadu", district: "Chennai", religion: "Hindu", bloodGroup: "B+", zones: ["A", "D", "B"], avsecTrainingExpiry: "2026-07-24" },
   { id: "IND-03", entityId: "ENT-03", name: "S. Khan", jobRole: "Catering Loader", hasLogin: true, state: "Uttar Pradesh", district: "Kanpur", religion: "Muslim", bloodGroup: "A+", zones: ["T", "P"], avsecTrainingExpiry: "2026-04-22" },
   { id: "IND-04", entityId: "ENT-04", name: "D. Rao", jobRole: "Fuel Technician", hasLogin: false, state: "Telangana", district: "Hyderabad", religion: "Hindu", bloodGroup: "AB+", zones: ["P", "T"], avsecTrainingExpiry: "2026-12-01" },
-  { id: "IND-05", entityId: "ENT-02", name: "P. Nair", jobRole: "Security Screener", hasLogin: false, state: "Kerala", district: "Kochi", religion: "Christian", bloodGroup: "O-", zones: ["T", "Si", "P"], avsecTrainingExpiry: "2026-07-30" },
+  { id: "IND-05", entityId: "ENT-02", name: "P. Nair", jobRole: "Security Screener", hasLogin: false, state: "Kerala", district: "Kochi", religion: "Christian", bloodGroup: "O-", zones: ["T", "Si", "P"], avsecTrainingExpiry: "2027-01-30" },
   { id: "IND-06", entityId: "ENT-05", name: "A. Reddy", jobRole: "Cargo Handler", hasLogin: false, state: "Andhra Pradesh", district: "Vijayawada", religion: "Hindu", bloodGroup: "B-", zones: ["Cd", "Csd"], avsecTrainingExpiry: "2026-05-15" },
+  { id: "IND-07", entityId: "ENT-01", name: "V. Singh", jobRole: "AME Technician", hasLogin: false, state: "Punjab", district: "Amritsar", religion: "Sikh", bloodGroup: "B+", zones: ["P", "A"], avsecTrainingExpiry: "2027-03-01" },
 ];
 
 // §15 — AEP Checking Committee monthly surprise checks + annual 20% audit sample.
@@ -127,7 +128,7 @@ export const APPLICATIONS: Application[] = [
   { id: "APP-2244", pillar: "MAN", entityId: "ENT-04", subject: "D. Rao", passType: "BAEP", zones: ["P", "T"], status: "approved", createdBy: "Entity", createdAt: "2026-07-03", clauseRef: "§5" },
   { id: "APP-2247", pillar: "MATERIAL", entityId: "ENT-01", subject: "AME Toolkit · V. Singh", passType: "ToT", zones: ["P"], escort: "R. Sharma", status: "checklist_pending", createdBy: "Entity", createdAt: "2026-07-05", clauseRef: "§12B" },
   { id: "APP-2248", pillar: "VEHICLE", entityId: "ENT-01", subject: "DL-1GC-4471 · pushback tug", passType: "VAP", zones: ["P"], status: "checklist_pending", createdBy: "Entity", createdAt: "2026-07-05", clauseRef: "§12A" },
-  { id: "APP-2256", pillar: "MAN", entityId: "ENT-02", subject: "P. Nair", passType: "BAEP", zones: ["T", "Si"], status: "committee_scheduled", createdBy: "Entity", createdAt: "2026-07-02", clauseRef: "§5" },
+  { id: "APP-2256", pillar: "MAN", entityId: "ENT-02", individualId: "IND-05", subject: "P. Nair", passType: "BAEP", zones: ["T", "Si"], status: "committee_scheduled", createdBy: "Entity", createdAt: "2026-07-02", clauseRef: "§5" },
   { id: "APP-2257", pillar: "MATERIAL", entityId: "ENT-02", subject: "Catering hi-loader", passType: "ToT", zones: ["P"], escort: "P. Nair", status: "checklist_pending", createdBy: "Entity", createdAt: "2026-07-05", clauseRef: "§12B" },
   { id: "APP-2258", pillar: "VEHICLE", entityId: "ENT-05", subject: "MH-04-CV-2231 · cargo van", passType: "VAP", zones: ["Cd"], status: "issued", createdBy: "Pass Section", createdAt: "2026-06-28", expiryDate: "2026-07-22", clauseRef: "§12A" },
   { id: "APP-2259", pillar: "MAN", entityId: "ENT-05", subject: "A. Reddy", passType: "TAEP", zones: ["Cd", "Csd"], status: "issued", createdBy: "Pass Section", createdAt: "2026-06-25", expiryDate: "2026-07-19", clauseRef: "§5" },
@@ -166,7 +167,8 @@ export interface MaterialMove {
   quantity: number;
   unit: string;
   gate?: string;           // gate used for in/out
-  carrier: string;         // person who carried it
+  carrier: string;         // person who carried it (name)
+  carrierId?: string;      // → Individual.id — the carrier must be a valid AEP holder
   ts: string;              // date + time
   reason?: string;         // for consumed: consumed | sold_out | damaged | returned
   remarks?: string;
@@ -216,10 +218,10 @@ export const MATERIALS: MaterialItem[] = [
 ];
 
 export const MATERIAL_MOVES: MaterialMove[] = [
-  { id: "MOV-06", code: "MAT-04", entityId: "ENT-02", requestId: "TOT-2202", direction: "consumed", quantity: 120, unit: "nos", carrier: "P. Nair", ts: "2026-07-05 11:00", by: "Entity", reason: "consumed", remarks: "Loaded to aircraft galley" },
-  { id: "MOV-05", code: "MAT-04", entityId: "ENT-02", requestId: "TOT-2202", direction: "in", quantity: 120, unit: "nos", gate: "G5", carrier: "P. Nair", ts: "2026-07-05 06:30", by: "CISF Gate" },
-  { id: "MOV-04", code: "MAT-03", entityId: "ENT-01", requestId: "TOT-2201", direction: "consumed", quantity: 3, unit: "litre", carrier: "V. Singh", ts: "2026-07-05 14:00", by: "Entity", reason: "consumed", remarks: "Used on A320 hydraulics" },
-  { id: "MOV-03", code: "MAT-03", entityId: "ENT-01", requestId: "TOT-2201", direction: "in", quantity: 5, unit: "litre", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 08:12", by: "CISF Gate" },
-  { id: "MOV-02", code: "MAT-01", entityId: "ENT-01", requestId: "TOT-2201", direction: "out", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 17:40", by: "CISF Gate" },
-  { id: "MOV-01", code: "MAT-01", entityId: "ENT-01", requestId: "TOT-2201", direction: "in", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", ts: "2026-07-05 08:10", by: "CISF Gate", remarks: "AME line maintenance" },
+  { id: "MOV-06", code: "MAT-04", entityId: "ENT-02", requestId: "TOT-2202", direction: "consumed", quantity: 120, unit: "nos", carrier: "P. Nair", carrierId: "IND-05", ts: "2026-07-05 11:00", by: "Entity", reason: "consumed", remarks: "Loaded to aircraft galley" },
+  { id: "MOV-05", code: "MAT-04", entityId: "ENT-02", requestId: "TOT-2202", direction: "in", quantity: 120, unit: "nos", gate: "G5", carrier: "P. Nair", carrierId: "IND-05", ts: "2026-07-05 06:30", by: "CISF Gate" },
+  { id: "MOV-04", code: "MAT-03", entityId: "ENT-01", requestId: "TOT-2201", direction: "consumed", quantity: 3, unit: "litre", carrier: "V. Singh", carrierId: "IND-07", ts: "2026-07-05 14:00", by: "Entity", reason: "consumed", remarks: "Used on A320 hydraulics" },
+  { id: "MOV-03", code: "MAT-03", entityId: "ENT-01", requestId: "TOT-2201", direction: "in", quantity: 5, unit: "litre", gate: "G3", carrier: "V. Singh", carrierId: "IND-07", ts: "2026-07-05 08:12", by: "CISF Gate" },
+  { id: "MOV-02", code: "MAT-01", entityId: "ENT-01", requestId: "TOT-2201", direction: "out", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", carrierId: "IND-07", ts: "2026-07-05 17:40", by: "CISF Gate" },
+  { id: "MOV-01", code: "MAT-01", entityId: "ENT-01", requestId: "TOT-2201", direction: "in", quantity: 1, unit: "box", gate: "G3", carrier: "V. Singh", carrierId: "IND-07", ts: "2026-07-05 08:10", by: "CISF Gate", remarks: "AME line maintenance" },
 ];

@@ -131,6 +131,7 @@ export interface Application {
   pillar: Pillar;
   entityId: string;
   contractId?: string; // the contract this pass is raised under
+  individualId?: string; // MAN — the AEP holder this pass belongs to (→ Individual.id)
   subject: string; // person name (MAN) / item (MATERIAL) / vehicle (VEHICLE)
   jobRole?: string; // MAN — drives zone-need
   passType: PassType;

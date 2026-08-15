@@ -1,0 +1,194 @@
+/* ===========================================================================
+   AEP Portal — CompliantBharat design system
+   Faithful adoption of the CompliantBharat Console tokens: navy + cloud + ink
+   palette, Instrument Serif display / Outfit sans / JetBrains Mono, status +
+   regulator colour coding, aviation-themed easing (cruise / flap).
+   Backwards-compatible aliases keep existing components styled.
+   =========================================================================== */
+
+:root {
+  /* ---- palette (CompliantBharat) ---- */
+  --navy-900: #050f22; --navy-800: #071830; --navy-700: #0a1e3c;
+  --navy-600: #0d2b6e; --navy-500: #1249c0; --navy-400: #1a56db;
+  --blue-400: #3b82f6; --blue-300: #60a5fa; --blue-200: #93c5fd; --blue-100: #dbe7ff;
+  --white: #ffffff;
+  --cloud-50: #f0f4ff; --cloud-100: #f5f8ff; --cloud-150: #eef4ff;
+  --cloud-200: #e3eaf6; --cloud-300: #cfd9ec;
+  --ink-900: #0a1124; --ink-700: #1e2a44; --ink-500: #475068;
+  --ink-400: #6b7488; --ink-300: #9aa3b7;
+  --red-700: #c41e1e; --red-500: #dc2626; --red-100: #fee2e2;
+  --amber-700: #a85500; --amber-500: #d97706; --amber-100: #fef0da;
+  --green-700: #047857; --green-500: #0e9f6e; --green-300: #6ee7b7; --green-100: #d7f5e8;
+  --violet-500: #7c3aed; --violet-100: #ede4fe; --cyan-500: #0891b2; --cyan-100: #cff3fb;
+
+  /* regulator coding */
+  --reg-bcas: #dc2626; --reg-dgca: #1a56db; --reg-aai: #0891b2; --reg-aera: #7c3aed;
+  --reg-moef: #0e9f6e; --reg-epfo: #d97706; --reg-certin: #5b21b6;
+
+  /* pillar coding (Man / Material / Vehicle) */
+  --pillar-man: #1249c0; --pillar-man-soft: #dbe7ff;
+  --pillar-material: #d97706; --pillar-material-soft: #fef0da;
+  --pillar-vehicle: #0891b2; --pillar-vehicle-soft: #cff3fb;
+
+  /* semantic surfaces + text */
+  --surface-app: var(--cloud-100); --surface-card: var(--white);
+  --surface-sunken: var(--cloud-150); --surface-nav: var(--navy-800); --surface-comm: var(--navy-700);
+  --text-strong: var(--ink-900); --text-body: var(--ink-700); --text-secondary: var(--ink-500);
+  --text-muted: #5d6883; --text-on-dark: var(--cloud-50); --text-link: var(--navy-500);
+  --border-hairline: var(--cloud-200); --border-strong: var(--cloud-300); --border-focus: var(--navy-500);
+  --action-primary: var(--navy-500); --action-primary-hover: #0e3ca0; --accent: var(--blue-400);
+  --status-clear: var(--green-700); --status-caution: var(--amber-500);
+  --status-stop: var(--red-500); --status-info: var(--navy-500);
+  --status-clear-soft: var(--green-100); --status-caution-soft: var(--amber-100);
+  --status-stop-soft: var(--red-100); --status-info-soft: var(--blue-100);
+
+  /* type */
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Outfit", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --tracking-label: 0.12em; --tracking-tight: -0.02em;
+
+  /* geometry */
+  --radius-xs: 3px; --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px; --radius-pill: 999px;
+  --nav-width: 248px; --nav-height: 60px; --container: 1440px;
+  --shadow-xs: 0 1px 2px rgba(7, 24, 48, 0.06);
+  --shadow-sm: 0 1px 2px rgba(7, 24, 48, 0.06);
+  --shadow: 0 8px 26px rgba(7, 24, 48, 0.08);
+  --shadow-lg: 0 18px 48px rgba(7, 24, 48, 0.16);
+  --shadow-nav: 0 2px 16px rgba(5, 15, 34, 0.30);
+  --shadow-focus: 0 0 0 3px rgba(18, 73, 192, 0.25);
+
+  /* motion — aviation easing */
+  --ease-cruise: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-flap: cubic-bezier(0.34, 1.2, 0.64, 1);
+  --dur-fast: 120ms; --dur-base: 220ms; --dur-slow: 360ms;
+  --transition: all var(--dur-base) var(--ease-cruise);
+
+  /* ---- backwards-compat aliases (existing components) ---- */
+  --paper: var(--surface-app); --card: var(--surface-card); --ink: var(--ink-900); --ink-2: var(--ink-700);
+  --slate: var(--ink-500); --mute: var(--ink-300); --line: var(--cloud-200); --line-2: var(--cloud-300);
+  --brand: var(--navy-500); --brand-soft: var(--blue-100); --navy: var(--navy-800);
+  --amber: var(--amber-500); --amber-d: var(--amber-700); --teal: var(--cyan-500);
+  --green: var(--green-700); --green-soft: var(--green-100); --red: var(--red-500); --red-soft: var(--red-100);
+  --violet: var(--violet-500); --violet-soft: var(--violet-100);
+  --blue-soft: var(--blue-100); --amber-soft: var(--amber-100); --teal-soft: var(--cyan-100); --slate-soft: var(--cloud-150);
+  --role-admin: var(--navy-500); --role-bcas: var(--red-500); --role-operator: var(--cyan-500);
+  --role-entity: var(--green-700); --role-others: var(--violet-500); --role-cisf: #0d9488;
+  --radius: var(--radius-lg); --sidebar-w: var(--nav-width);
+}
+
+:root[data-theme="dark"] {
+  /* Eye-comfort dark: desaturated slate surfaces (no pure black), gentle steps
+     between app/card, soft off-white text (never harsh #fff), calmer accents. */
+  --surface-app: #10161f; --surface-card: #171f2b; --surface-sunken: #131b26;
+  --surface-nav: #121a26; --surface-comm: #141d2a;
+  --text-strong: #e4ebf4; --text-body: #cdd8e6; --text-secondary: #9fb0c4; --text-muted: #8698ae;
+  --border-hairline: #232f3f; --border-strong: #33435a;
+  /* Soft status backgrounds — desaturated so pill text reads clearly without glare. */
+  --blue-100: #1b2c48; --green-100: #143026; --amber-100: #362a14; --red-100: #37201e; --violet-100: #272040; --cyan-100: #143030;
+  --cloud-150: #151d29; --cloud-200: #232f3f; --cloud-300: #33435a;
+  --status-clear-soft: var(--green-100); --status-caution-soft: var(--amber-100);
+  --status-stop-soft: var(--red-100); --status-info-soft: var(--blue-100);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32); --shadow: 0 10px 30px rgba(0, 0, 0, 0.42); --shadow-lg: 0 22px 56px rgba(0, 0, 0, 0.5);
+  --shadow-focus: 0 0 0 3px rgba(96, 165, 250, 0.3);
+  --slate-soft: #1c2636; --action-primary: #3a6bcc; --action-primary-hover: #4a7cdd; --border-focus: var(--blue-300);
+  --text-link: var(--blue-300); --accent: var(--blue-300);
+}
+
+/* Dark-mode legibility: status pills, clause badges, CRUD cells and role flags
+   must use LIGHT foregrounds on their soft dark backgrounds. */
+:root[data-theme="dark"] .tone-blue { color: var(--blue-200); }
+:root[data-theme="dark"] .tone-green { color: var(--green-300); }
+:root[data-theme="dark"] .tone-amber { color: #f2b872; }
+:root[data-theme="dark"] .tone-red { color: #f6a5a5; }
+:root[data-theme="dark"] .tone-violet { color: #c6b6f7; }
+:root[data-theme="dark"] .tone-teal { color: #74d6e2; }
+:root[data-theme="dark"] .tone-slate { color: var(--text-secondary); }
+:root[data-theme="dark"] .tone-ink { background: #1c2c48; color: var(--text-strong); }
+:root[data-theme="dark"] .badge-clause { color: var(--blue-200); }
+:root[data-theme="dark"] .crud-cell.on { color: var(--green-300); }
+:root[data-theme="dark"] .role-flag { color: #f6a5a5; }
+:root[data-theme="dark"] .role-custom { color: var(--blue-200); }
+:root[data-theme="dark"] .flag-banner { color: #f6a5a5; border-color: #4a2626; }
+:root[data-theme="dark"] .stop-hit,
+:root[data-theme="dark"] .sla-breach { color: #f6a5a5; }
+:root[data-theme="dark"] .vis-cell.on { color: var(--green-300); }
+:root[data-theme="dark"] .chip-f { color: var(--blue-200); }
+:root[data-theme="dark"] .action-chip.tone-red { color: #f6a5a5; }
+:root[data-theme="dark"] .action-chip.tone-amber { color: #f2b872; }
+:root[data-theme="dark"] .pen-late { color: #f6a5a5; }
+:root[data-theme="dark"] .kpi-icon { color: #fff; }
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0; font-family: var(--font-sans); background: var(--surface-app); color: var(--text-strong);
+  font-size: 15px; -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+.mono { font-family: var(--font-mono); }
+.serif { font-family: var(--font-display); }
+
+/* ---- keyframes (subtle, aviation-themed) ---------------------------------- */
+@keyframes cb-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes cb-climb { from { opacity: 0; transform: translateY(16px) scale(0.99); } to { opacity: 1; transform: none; } }
+@keyframes cb-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cb-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.rise { animation: cb-rise var(--dur-slow) var(--ease-cruise) both; }
+.stagger > * { animation: cb-climb var(--dur-slow) var(--ease-cruise) both; }
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(6) { animation-delay: 200ms; }
+.stagger > *:nth-child(7) { animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .stagger > *, .kpi, .role-card { animation: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}
+
+/* ---- primitives ---------------------------------------------------------- */
+.card { background: var(--surface-card); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); box-shadow: var(--shadow-xs); }
+.card-pad { padding: clamp(16px, 2vw, 22px); }
+
+.btn { display: inline-flex; align-items: center; gap: 8px; justify-content: center; border: 1px solid transparent;
+  border-radius: var(--radius-md); padding: 10px 16px; font-size: 14px; font-weight: 600; white-space: nowrap;
+  transition: var(--transition); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn-brand { background: var(--action-primary); color: #fff; }
+.btn-brand:hover:not(:disabled) { background: var(--action-primary-hover); }
+.btn-ink { background: var(--ink-900); color: var(--white); }
+.btn-ghost { background: var(--surface-card); color: var(--text-strong); border-color: var(--border-strong); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--ink-400); background: var(--surface-sunken); }
+.btn-amber { background: var(--amber-500); color: #241803; }
+
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--radius-pill);
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; line-height: 1.5; }
+.pill-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.tone-blue { background: var(--blue-100); color: var(--navy-500); }
+.tone-amber { background: var(--amber-100); color: var(--amber-700); }
+.tone-teal { background: var(--cyan-100); color: var(--cyan-500); }
+.tone-green { background: var(--green-100); color: var(--green-700); }
+.tone-red { background: var(--red-100); color: var(--red-500); }
+.tone-violet { background: var(--violet-100); color: var(--violet-500); }
+.tone-slate { background: var(--slate-soft); color: var(--ink-500); }
+.tone-ink { background: var(--ink-900); color: var(--white); }
+
+.badge-clause { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--navy-500);
+  background: var(--blue-100); padding: 2px 7px; border-radius: var(--radius-sm); white-space: nowrap; }
+
+.field { width: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 11px 13px;
+  font-size: 14px; font-family: inherit; color: var(--text-strong); background: var(--surface-card); outline: none; transition: var(--transition); }
+.field:focus { border-color: var(--border-focus); box-shadow: var(--shadow-focus); }
+.field::placeholder { color: var(--text-muted); }
+
+.muted { color: var(--text-muted); }
+.section-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-strong); }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; border: 3px solid var(--surface-app); }

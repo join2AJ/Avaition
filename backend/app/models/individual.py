@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, func
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -13,6 +13,9 @@ class Individual(Base):
     job_role = Column(String(128), nullable=False)  # drives JobRoleZoneMatrix lookups
     id_proof_number = Column(String(128), nullable=True)
     photo_path = Column(String(512), nullable=True)
+    # An entity may authorize a self-check login for this individual so they
+    # can track their own application status (read-only, own records).
+    login_authorized = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     entity = relationship("Entity", back_populates="individuals")

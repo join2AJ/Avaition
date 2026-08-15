@@ -58,6 +58,17 @@ ROLE_PERMISSIONS = {
         VerticalEnum.reports: (False, False, False, False),
         VerticalEnum.penalties: (False, True, False, False),
     },
+    # CISF — gate verification only: read individuals & documents to confirm a
+    # pass record against the physical card. No create/update anywhere.
+    "cisf": {
+        VerticalEnum.individuals: (False, True, False, False),
+        VerticalEnum.documents: (False, True, False, False),
+    },
+    # Individual self-check — read own records only (query-scoped by user).
+    "individual": {
+        VerticalEnum.individuals: (False, True, False, False),
+        VerticalEnum.documents: (False, True, False, False),
+    },
 }
 
 ZONES = [

@@ -70,6 +70,8 @@ class Entity(Base):
     individuals = relationship("Individual", back_populates="entity")
     applications = relationship("Application", back_populates="entity")
     zone_entitlements = relationship("EntityZoneEntitlement", back_populates="entity")
+    material_items = relationship("MaterialItem", back_populates="entity")
+    vehicles = relationship("Vehicle", back_populates="entity")
 
     @property
     def self_service_login_allowed(self) -> bool:

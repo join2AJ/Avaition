@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, LogOut, Moon, Plane, Search, Sun, Menu, X, ChevronDown } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Bell, LogOut, Moon, Plane, Search, Sun, PanelLeftClose, PanelLeft, Menu, X } from "lucide-react";
 import { useAuth } from "@/app/auth";
 import { useTheme } from "@/app/theme";
 import { useData } from "@/app/data";
-import { groupNavItems, type NavGroup } from "@/app/nav";
+import { groupNavItems } from "@/app/nav";
 import { ROLE_LABEL } from "@/domain/roles";
+import { PILLARS } from "@/domain/types";
 
 export default function Shell({ children }: { children: ReactNode }) {
   const { session, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const { markNotificationsRead, visibleNav, notificationsFor } = useData();
   const nav = useNavigate();
-  const { pathname } = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [q, setQ] = useState("");
@@ -29,9 +30,6 @@ export default function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Close the mobile drawer whenever the route changes.
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
-
   const runSearch = () => {
     if (!q.trim()) return;
     nav(`/app/applications?q=${encodeURIComponent(q.trim())}`);
@@ -39,28 +37,75 @@ export default function Shell({ children }: { children: ReactNode }) {
 
   if (!session) return null;
   const groups = groupNavItems(visibleNav(session.role));
-  const isActiveGroup = (g: NavGroup) =>
-    g.items.some((it) => (it.to === "/app" ? pathname === "/app" : pathname === it.to || pathname.startsWith(it.to + "/")));
 
   return (
-    <div className={`app-shell ${mobileOpen ? "menu-open" : ""}`}>
-      <header className="appheader">
-        <div className="appbar">
-          <div className="appbar-brand" onClick={() => nav("/app")} role="button" tabIndex={0}>
-            <span className="brand-mark"><Plane size={17} /></span>
-            <span className="brand-text"><b>AEP Portal</b><small>COMPLIANTBHARAT · AVIATION</small></span>
-          </div>
+    <div className={`shell ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
+      {mobileOpen && <div className="mobile-scrim" onClick={() => setMobileOpen(false)} />}
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <span className="brand-mark"><Plane size={18} /></span>
+          <span className="brand-text">
+            <b>AEP Portal</b>
+            <small>COMPLIANTBHARAT · AVIATION</small>
+          </span>
+          <button className="icon-btn drawer-close" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X size={18} /></button>
+        </div>
 
-          <div className="topbar-search appbar-search">
+        <div className="sidebar-role">
+          <span className="eyebrow">Signed in as</span>
+          <div className="role-chip">{ROLE_LABEL[session.role]}</div>
+        </div>
+
+        <nav className="sidebar-nav">
+          {groups.map((g) => (
+            <div key={g.label} className="nav-group">
+              <div className="nav-group-label">{g.label}</div>
+              {g.items.map((it) => {
+                const Icon = it.icon;
+                return (
+                  <NavLink key={it.to} to={it.to} end={it.to === "/app"} className="nav-item" onClick={() => setMobileOpen(false)}>
+                    <Icon size={17} />
+                    <span>{it.label}</span>
+                    {it.badge ? <span className="nav-badge">{it.badge}</span> : null}
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        <div className="sidebar-foot">
+          <span className="eyebrow">Governed by</span>
+          <div className="mono govern">AVSEC Order 02/2022</div>
+          <button className="btn btn-ghost" style={{ width: "100%" }} onClick={() => { signOut(); nav("/"); }}>
+            <LogOut size={15} /> Sign out
+          </button>
+        </div>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <button className="icon-btn menu-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+            <Menu size={19} />
+          </button>
+          <button className="icon-btn collapse-btn" onClick={() => setCollapsed((c) => !c)} aria-label="Toggle sidebar">
+            {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
+          </button>
+          <div className="topbar-search">
             <Search size={15} />
             <input ref={searchRef} value={q} placeholder="Search applications, entities, zones…"
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") runSearch(); if (e.key === "Escape") setQ(""); }} />
             <kbd>⌘K</kbd>
           </div>
-
-          <div className="appbar-actions">
-            <span className="role-chip appbar-role">{ROLE_LABEL[session.role]}</span>
+          <div className="pillar-legend">
+            {PILLARS.map((p) => (
+              <span key={p.key} className={`pill tone-${p.key === "MAN" ? "blue" : p.key === "MATERIAL" ? "amber" : "teal"}`}>
+                {p.roman} · {p.label}
+              </span>
+            ))}
+          </div>
+          <div className="topbar-actions">
             <button className="icon-btn" onClick={toggle} aria-label="Toggle theme">
               {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
             </button>
@@ -88,71 +133,10 @@ export default function Shell({ children }: { children: ReactNode }) {
               <span className="avatar">{session.name.slice(0, 1).toUpperCase()}</span>
               <span className="user-meta"><b>{session.name}</b><small>{ROLE_LABEL[session.role]}</small></span>
             </div>
-            <button className="icon-btn signout-btn" onClick={() => { signOut(); nav("/"); }} aria-label="Sign out"><LogOut size={16} /></button>
-            <button className="icon-btn hamburger" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu size={19} /></button>
           </div>
-        </div>
-
-        {/* Desktop grouped menu bar */}
-        <nav className="navbar">
-          {groups.map((g) => {
-            if (g.items.length === 1) {
-              const only = g.items[0];
-              const Icon = only.icon;
-              return (
-                <NavLink key={g.label} to={only.to} end={only.to === "/app"}
-                  className={({ isActive }) => `navgroup-btn ${isActive ? "active" : ""}`}>
-                  <Icon size={15} /> {only.label}
-                </NavLink>
-              );
-            }
-            return (
-              <div key={g.label} className={`navgroup ${isActiveGroup(g) ? "active" : ""}`}>
-                <button className="navgroup-btn" type="button">{g.label} <ChevronDown size={14} /></button>
-                <div className="navmenu">
-                  {g.items.map((it) => {
-                    const Icon = it.icon;
-                    return (
-                      <NavLink key={it.to} to={it.to} end={it.to === "/app"}
-                        className={({ isActive }) => `navmenu-item ${isActive ? "active" : ""}`}>
-                        <Icon size={16} /> <span>{it.label}</span>
-                        {it.badge ? <span className="nav-badge">{it.badge}</span> : null}
-                      </NavLink>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </nav>
-      </header>
-
-      {/* Mobile drawer */}
-      {mobileOpen && <div className="mobile-scrim" onClick={() => setMobileOpen(false)} />}
-      <aside className="mobile-menu" aria-hidden={!mobileOpen}>
-        <div className="mm-head">
-          <span className="brand-text"><b>Menu</b><small>{ROLE_LABEL[session.role]}</small></span>
-          <button className="icon-btn" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X size={18} /></button>
-        </div>
-        {groups.map((g) => (
-          <div key={g.label} className="mm-group">
-            <div className="mm-group-label">{g.label}</div>
-            {g.items.map((it) => {
-              const Icon = it.icon;
-              return (
-                <NavLink key={it.to} to={it.to} end={it.to === "/app"}
-                  className={({ isActive }) => `mm-item ${isActive ? "active" : ""}`}>
-                  <Icon size={17} /> <span>{it.label}</span>
-                  {it.badge ? <span className="nav-badge">{it.badge}</span> : null}
-                </NavLink>
-              );
-            })}
-          </div>
-        ))}
-        <button className="btn btn-ghost mm-signout" onClick={() => { signOut(); nav("/"); }}><LogOut size={15} /> Sign out</button>
-      </aside>
-
-      <main className="content">{children}</main>
+        </header>
+        <main className="content">{children}</main>
+      </div>
     </div>
   );
 }

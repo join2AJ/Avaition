@@ -225,6 +225,68 @@ export const SCHEMA: Tbl[] = [
     ],
   },
 
+  // ---- Material Tracking (ToT) ------------------------------------------
+  // ToT is NOT a pass type — it is material movement control: what an agency's
+  // people carry INTO the terminal, CONSUME inside, and carry OUT, reconciled
+  // item-by-item. Every material is classified by AEP-guideline annexure
+  // category (A–G) and carries dimensions, type, quantity and unit.
+  {
+    name: "material_categories", domain: "Material Tracking (ToT)", purpose: "AEP-guideline annexure classes A–G that every material maps to.",
+    cols: [
+      { name: "code", type: "varchar(2)", key: "PK", note: "A | B | C | D | E | F | G" },
+      { name: "name", type: "text", note: "e.g. Tools & tackles, Provisions/food, Chemicals…" },
+      { name: "annexure_ref", type: "text", note: "AEP Guidelines annexure reference" },
+      { name: "description", type: "text" },
+      { name: "restricted", type: "boolean", note: "needs extra screening / RD-BCAS nod" },
+    ],
+  },
+  {
+    name: "materials", domain: "Material Tracking (ToT)", purpose: "Catalogue of declarable materials with class, type and physical spec.",
+    cols: [
+      { name: "id", type: "varchar(16)", key: "PK", note: "e.g. MAT-014" },
+      { name: "name", type: "text" },
+      { name: "type", type: "varchar(20)", note: "tool | equipment | food | consumable | spare | chemical" },
+      { name: "category_code", type: "varchar(2)", key: "FK", ref: "material_categories.code", note: "annexure A–G" },
+      { name: "unit", type: "varchar(12)", note: "nos | kg | litre | metre | box" },
+      { name: "length_cm", type: "numeric(8,2)", nullable: true, note: "dimension L" },
+      { name: "width_cm", type: "numeric(8,2)", nullable: true, note: "dimension W" },
+      { name: "height_cm", type: "numeric(8,2)", nullable: true, note: "dimension H" },
+      { name: "weight_kg", type: "numeric(10,3)", nullable: true },
+      { name: "consumable", type: "boolean", note: "consumed inside (food/fuel) vs returnable (tool)" },
+      { name: "hazardous", type: "boolean", note: "DG / restricted handling" },
+      { name: "hsn_code", type: "varchar(12)", nullable: true },
+    ],
+  },
+  {
+    name: "material_declarations", domain: "Material Tracking (ToT)", purpose: "Planned materials declared on a ToT application (the 'intend to bring').",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "application_id", type: "varchar(16)", key: "FK", ref: "applications.id", note: "the ToT authorization" },
+      { name: "material_id", type: "varchar(16)", key: "FK", ref: "materials.id" },
+      { name: "declared_qty", type: "numeric(12,3)" },
+      { name: "unit", type: "varchar(12)" },
+      { name: "purpose", type: "text", note: "why it is being taken in" },
+    ],
+  },
+  {
+    name: "material_movements", domain: "Material Tracking (ToT)", purpose: "The tracking core — every IN / CONSUMED / OUT event with running balance.",
+    cols: [
+      { name: "id", type: "uuid", key: "PK" },
+      { name: "material_id", type: "varchar(16)", key: "FK", ref: "materials.id" },
+      { name: "application_id", type: "varchar(16)", key: "FK", ref: "applications.id", nullable: true, note: "ToT authorization" },
+      { name: "pass_id", type: "varchar(16)", key: "FK", ref: "passes.id", nullable: true, note: "ToT card used at gate" },
+      { name: "individual_id", type: "varchar(16)", key: "FK", ref: "individuals.id", note: "who carried it" },
+      { name: "gate_code", type: "varchar(8)", key: "FK", ref: "gates.code" },
+      { name: "verified_by", type: "uuid", key: "FK", ref: "users.id", note: "CISF at gate" },
+      { name: "direction", type: "varchar(10)", note: "in | consumed | out" },
+      { name: "quantity", type: "numeric(12,3)" },
+      { name: "unit", type: "varchar(12)" },
+      { name: "moved_at", type: "timestamptz" },
+      { name: "balance_inside", type: "numeric(12,3)", note: "running qty still inside after this event (in − consumed − out)" },
+      { name: "remarks", type: "text", nullable: true },
+    ],
+  },
+
   // ---- 5. Committees -----------------------------------------------------
   {
     name: "committees", domain: "Committees", purpose: "Scheduled committee sessions that clear applications.",
@@ -470,17 +532,6 @@ export const SCHEMA: Tbl[] = [
     ],
   },
   {
-    name: "materials", domain: "Applications & Passes", purpose: "MATERIAL-pillar subject detail for a ToT (§12B).",
-    cols: [
-      { name: "id", type: "uuid", key: "PK" },
-      { name: "application_id", type: "varchar(16)", key: "FK", ref: "applications.id" },
-      { name: "item", type: "text" },
-      { name: "serial_no", type: "text", nullable: true },
-      { name: "quantity", type: "integer" },
-      { name: "description", type: "text", nullable: true },
-    ],
-  },
-  {
     name: "attachments", domain: "Applications & Passes", purpose: "Polymorphic file store (photos, ID proof, BGC report, contract copy).",
     cols: [
       { name: "id", type: "uuid", key: "PK" },
@@ -562,6 +613,7 @@ const DOMAIN_ACCENT: Record<string, string> = {
   "Entity Registration": "#1a56db",
   "People": "#0891b2",
   "Applications & Passes": "#15803d",
+  "Material Tracking (ToT)": "#c2410c",
   "Committees": "#b45309",
   "Zones & Access": "#0d9488",
   "Compliance & Enforcement": "#dc2626",
@@ -605,7 +657,10 @@ const INSIGHT: Record<string, string> = {
   bgc_checks: "Vetting. Join to individuals to block issuance on adverse / expired BGC (§9 · §11).",
   passes: "Issued cards. Correlate to applications (1:1) and access_events (gate scans) for a card’s live status.",
   vehicles: "VAP subject detail. Join to applications to validate RC / insurance / PUC / fitness before issue.",
-  materials: "ToT subject detail. Join to applications for item / serial / qty.",
+  material_categories: "Annexure A–G classes. Join to materials to split food / tools / chemicals and flag restricted classes.",
+  materials: "Material catalogue (class, type, dimension, unit). Join to declarations (planned) and movements (actual).",
+  material_declarations: "What a ToT application intends to bring. Compare against material_movements to see declared vs actual.",
+  material_movements: "Every in / consumed / out event. Per material_id: SUM(in) − SUM(consumed) − SUM(out) = qty still inside; join gates, individuals, passes, users (CISF) for full custody.",
   attachments: "Polymorphic files. Correlate by owner_type + owner_id to any entity / application / individual / bgc.",
   committee_members: "Roster. Join to committees / users for quorum + conflict checks.",
   gates: "Access points. Join to zones and access_events for gate-level traffic.",
